@@ -1,4 +1,5 @@
 import swarmHandler from './docker/swarm'
+import bucketHandler from './buckets'
 export default (db, mqtt) => {
 
     const handlers = {}
@@ -11,4 +12,5 @@ export default (db, mqtt) => {
     const publish = (topic, msg, options = {}) => mqtt.publish(topic, JSON.stringify(msg), options)
 
     subscribe('/bigboat/instances', swarmHandler(db.Instances))
+    subscribe('/agent/storage/buckets', bucketHandler(db.Buckets))
 }

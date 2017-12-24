@@ -15,6 +15,13 @@ type App {
   bigboatCompose: String!
   tags: [String!]!
 }
+type AppstoreApp {
+  name: String!
+  version: String!
+  image: String!
+  dockerCompose: String!
+  bigboatCompose: String!
+}
 
 type AgentInfo {
   url: String!
@@ -93,11 +100,23 @@ type Query {
   buckets: [Bucket!]!
   resources: [Resource!]!
   datastores: [DataStore!]!
-  appstoreApps: [JSON!]!
+  appstoreApps: [AppstoreApp!]!
 }
 
 type Subscription {
     instances: [Instance!]!
+    buckets: [Bucket!]!
+    apps: [App!]!
+}
+
+type Mutation {
+  createOrUpdateApp(
+    name: String!
+    version: String!
+    dockerCompose: String
+    bigboatCompose: String
+  ) : App!
+  removeApp(name: String!, version: String!): Int!
 }
 
 `;

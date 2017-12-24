@@ -6,7 +6,6 @@ const db = {
   Buckets: new Datastore(),
   Resources: new Datastore(),
   DataStores: new Datastore(),
-  AppstoreApps: new Datastore(),
 }
 
 module.exports = async () => {

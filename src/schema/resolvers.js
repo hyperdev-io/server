@@ -1,25 +1,31 @@
+import _ from 'lodash'
 import GraphQLJSON from 'graphql-type-json';
-import pubsub, {INSTANCES_TOPIC} from '../pubsub'
+import fetch from 'node-fetch'
+import yaml from 'js-yaml'
+import pubsub, {
+  INSTANCES_TOPIC,
+  BUCKETS_TOPIC,
+  APPS_TOPIC,
+} from '../pubsub'
 const {
   GraphQLDateTime
 } = require('graphql-iso-date');
+const APPSTORE_URL = 'https://raw.githubusercontent.com/bigboat-io/appstore/master/apps.yml?token=AChK-kgLp_6c7x6vz8os0jNChmyPifVYks5aRlxIwA%3D%3D'
 
-const pFindAll = (db) =>  {
-  return new Promise((resolve, reject) => {
-    db.find({}, (err, docs) => resolve(docs))
-  })
-}
+const pFindAll = (db) => new Promise((resolve, reject) => db.find({}, (err, docs) => resolve(docs)))
 
 export const resolvers = {
   JSON: GraphQLJSON,
   DateTime: GraphQLDateTime,
   Query: {
-    apps: (root, args, context) => pFindAll(context.db.Apps),
+    apps: async (root, args, context) => pFindAll(context.db.Apps),
     instances: async (root, args, context) => pFindAll(context.db.Instances),
-    buckets: (root, args, context) => pFindAll(context.db.Buckets),
-    resources: (root, args, context) => pFindAll(context.db.Resources),
-    datastores: (root, args, context) => pFindAll(context.db.DataStores),
-    appstoreApps: (root, args, context) => pFindAll(context.db.AppstoreApps),
+    buckets: async (root, args, context) => pFindAll(context.db.Buckets),
+    resources: async (root, args, context) => pFindAll(context.db.Resources),
+    datastores: async (root, args, context) => pFindAll(context.db.DataStores),
+    appstoreApps: async (root, args, context) => {
+      return fetch(APPSTORE_URL).then(res => res.text()).then( text => yaml.safeLoad(text))
+    },
   },
   App: {
     id: app => app._id
@@ -45,13 +51,29 @@ export const resolvers = {
   ContainerInfo: container => {console.log('cntr', container); return container},
   Subscription: {
     instances: {
-      resolve: (payload, args, context, info) => {
-        // Manipulate and return the new value
-        console.log('paylo', payload);
-        payload.id = 1
-        return payload
-      },
+      resolve: (payload, args, context, info) => payload,
       subscribe: () => pubsub.asyncIterator(INSTANCES_TOPIC),
+    },
+    buckets: {
+      resolve: (payload, args, context, info) => payload,
+      subscribe: () => pubsub.asyncIterator(BUCKETS_TOPIC),
+    },
+    apps: {
+      resolve: (payload, args, context, info) => payload,
+      subscribe: () => pubsub.asyncIterator(APPS_TOPIC),
+    },
+  },
+  Mutation: {
+    createOrUpdateApp: async (root, data, {db: {Apps}}) => {
+      data.tags = []
+      return new Promise((resolve, reject) => {
+        Apps.update(_.pick(data, 'name', 'version'), {$set:data}, {upsert:true, returnUpdatedDocs: true}, (err, numDocs, doc) => resolve(doc))
+      })
+    },
+    removeApp: async (root, data, {db: {Apps}}) => {
+      return new Promise((resolve, reject) => {
+        Apps.remove(_.pick(data, 'name', 'version'), {}, (err, numRemoved) => resolve(numRemoved))
+      })
     },
   }
 }
