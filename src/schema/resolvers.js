@@ -7,6 +7,9 @@ import pubsub, {
   BUCKETS_TOPIC,
   APPS_TOPIC,
 } from '../pubsub'
+import {
+  stopInstance
+} from '../mqtt'
 const {
   GraphQLDateTime
 } = require('graphql-iso-date');
@@ -74,6 +77,35 @@ export const resolvers = {
       return new Promise((resolve, reject) => {
         Apps.remove(_.pick(data, 'name', 'version'), {}, (err, numRemoved) => resolve(numRemoved))
       })
+    },
+    stopInstance: async (root, data, {db: {Instances}}) => {
+      return new Promise((resolve, reject) => {
+        const updateFields = {
+          desiredState: 'stopped',
+          status: 'Instance stop is requested',
+          stoppedBy: 0, //ToDo: record actual user
+        }
+        Instances.update(_.pick(data, 'name'), {$set: updateFields}, {returnUpdatedDocs: true}, (err, numDocs, doc) => {
+          if (doc) {
+            const body = JSON.stringify({
+              app: {
+                name: doc.app.name,
+                version: doc.app.version,
+                definition: '??',
+                bigboatCompose: '??',
+              },
+              instance: {
+                name: doc.name,
+                options: {},
+              }
+            })
+            console.log('POST body', body);
+            stopInstance(body)
+            resolve(doc)
+          } else reject(`Instance ${data.name} does not exist`)
+
+        })
+      }) 
     },
   }
 }

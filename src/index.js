@@ -56,9 +56,6 @@ const start = async () => {
       path: '/subscriptions',
     });
   })
-  // app.listen(PORT, () => {
-  // });
-
   mqttHandler(db, mqttClient)
 };
 

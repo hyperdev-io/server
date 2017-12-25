@@ -117,6 +117,7 @@ type Mutation {
     bigboatCompose: String
   ) : App!
   removeApp(name: String!, version: String!): Int!
+  stopInstance(name: String!): Instance!
 }
 
 `;
