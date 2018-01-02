@@ -109,6 +109,10 @@ type Subscription {
     apps: [App!]!
 }
 
+input Options {
+  storageBucket: String
+}
+
 type Mutation {
   createOrUpdateApp(
     name: String!
@@ -118,6 +122,7 @@ type Mutation {
   ) : App!
   removeApp(name: String!, version: String!): Int!
   stopInstance(name: String!): Instance!
+  startInstance(name: String!, appName: String!, appVersion: String!, parameters: JSON, options: Options): Instance!
 }
 
 `;

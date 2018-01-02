@@ -8,12 +8,13 @@ import pubsub, {
   APPS_TOPIC,
 } from '../pubsub'
 import {
-  stopInstance
+  stopInstance,
+  startInstance,
 } from '../mqtt'
 const {
   GraphQLDateTime
 } = require('graphql-iso-date');
-const APPSTORE_URL = 'https://raw.githubusercontent.com/bigboat-io/appstore/master/apps.yml?token=AChK-kgLp_6c7x6vz8os0jNChmyPifVYks5aRlxIwA%3D%3D'
+const APPSTORE_URL = 'https://raw.githubusercontent.com/bigboat-io/appstore/master/apps.yml?token=AChK-uCF7BEPyjje2LKLBCd7friWScbwks5aUMgYwA%3D%3D'
 
 const pFindAll = (db) => new Promise((resolve, reject) => db.find({}, (err, docs) => resolve(docs)))
 
@@ -78,6 +79,51 @@ export const resolvers = {
         Apps.remove(_.pick(data, 'name', 'version'), {}, (err, numRemoved) => resolve(numRemoved))
       })
     },
+    startInstance: async (root, data, {db: {Instances, Apps}}) => {
+      console.log('startInstance', data);
+      return new Promise((resolve, reject) => {
+        Apps.findOne( {name: data.appName, version: data.appVersion}, (err, doc) => {
+          if(doc == null) {
+            reject(`App ${data.appName}:${data.appVersion} does not exist.`)
+          }
+          var dockerCompose = yaml.safeLoad(doc.dockerCompose)
+          console.log('waa', dockerCompose);
+          
+          dockerCompose.services = _.mapValues(dockerCompose.services, (service, serviceName) => Object.assign(
+            service,
+            {
+              labels: {
+                'bigboat.instance.name':  data.name,
+                'bigboat.service.name': serviceName,
+                'bigboat.service.type': 'service',
+                'bigboat.application.name': doc.name,
+                'bigboat.application.version': doc.version  
+              }
+            }
+          ))
+          console.log('xxx', dockerCompose);
+          
+          
+          Object.assign(doc, {dockerCompose: yaml.safeDump(dockerCompose)})
+          startInstance({
+            app: doc,
+            instance: {
+              name: data.name,
+              options: data.options
+            }
+          })
+          resolve({})
+        })
+      })
+      // app:
+      //   name: app
+      //   version: version
+      //   definition: dockerCompose
+      //   bigboatCompose: bigboatCompose
+      // instance:
+      //   name: instance
+      //   options: options
+    },
     stopInstance: async (root, data, {db: {Instances}}) => {
       return new Promise((resolve, reject) => {
         const updateFields = {
@@ -87,7 +133,7 @@ export const resolvers = {
         }
         Instances.update(_.pick(data, 'name'), {$set: updateFields}, {returnUpdatedDocs: true}, (err, numDocs, doc) => {
           if (doc) {
-            const body = JSON.stringify({
+            const body ={
               app: {
                 name: doc.app.name,
                 version: doc.app.version,
@@ -98,7 +144,7 @@ export const resolvers = {
                 name: doc.name,
                 options: {},
               }
-            })
+            }
             console.log('POST body', body);
             stopInstance(body)
             resolve(doc)
