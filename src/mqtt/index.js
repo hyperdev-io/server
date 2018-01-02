@@ -21,5 +21,9 @@ export default (db, mqtt) => {
 }
 
 export const stopInstance = (data) => {
-    _mqtt.publish('/commands/instance/stop', data, {qos: 2})
+    _mqtt.publish('/commands/instance/stop', JSON.stringify(data), {qos: 2})
+}
+
+export const startInstance = (data) => {
+    _mqtt.publish('/commands/instance/start', JSON.stringify(data), {qos: 2})
 }
