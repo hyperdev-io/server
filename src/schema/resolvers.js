@@ -11,6 +11,7 @@ import {
   stopInstance,
   startInstance,
 } from '../mqtt'
+import { enhanceForBigBoat } from '../dockerComposeEnhancer'
 const {
   GraphQLDateTime
 } = require('graphql-iso-date');
@@ -84,45 +85,29 @@ export const resolvers = {
       return new Promise((resolve, reject) => {
         Apps.findOne( {name: data.appName, version: data.appVersion}, (err, doc) => {
           if(doc == null) {
-            reject(`App ${data.appName}:${data.appVersion} does not exist.`)
+            return reject(`App ${data.appName}:${data.appVersion} does not exist.`)
           }
-          var dockerCompose = yaml.safeLoad(doc.dockerCompose)
-          console.log('waa', dockerCompose);
-          
-          dockerCompose.services = _.mapValues(dockerCompose.services, (service, serviceName) => Object.assign(
-            service,
-            {
-              labels: {
-                'bigboat.instance.name':  data.name,
-                'bigboat.service.name': serviceName,
-                'bigboat.service.type': 'service',
-                'bigboat.application.name': doc.name,
-                'bigboat.application.version': doc.version  
-              }
-            }
-          ))
-          console.log('xxx', dockerCompose);
-          
-          
-          Object.assign(doc, {dockerCompose: yaml.safeDump(dockerCompose)})
+          const app = enhanceForBigBoat(data.name, data.options, doc)
+          console.log(app);
+          Instances.insert({
+            name: data.name,
+            storageBucket: data.options.storageBucket,
+            startedBy: 'TBD',
+            state: 'created',
+            desiredState: 'running',
+            status: 'Request sent to agent',
+            app: app,
+            services: []
+          }, (err, newDoc) => resolve(newDoc))
           startInstance({
-            app: doc,
+            app: app,
             instance: {
               name: data.name,
               options: data.options
             }
           })
-          resolve({})
         })
       })
-      // app:
-      //   name: app
-      //   version: version
-      //   definition: dockerCompose
-      //   bigboatCompose: bigboatCompose
-      // instance:
-      //   name: instance
-      //   options: options
     },
     stopInstance: async (root, data, {db: {Instances}}) => {
       return new Promise((resolve, reject) => {

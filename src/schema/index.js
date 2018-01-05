@@ -8,6 +8,7 @@ scalar DateTime
 
 # An app is a blueprint for a running Instance
 type App {
+  # This is the id
   id: ID!
   name: String!
   version: String!
