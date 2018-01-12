@@ -3,9 +3,9 @@ import GraphQLJSON from 'graphql-type-json';
 import fetch from 'node-fetch'
 import yaml from 'js-yaml'
 import pubsub, {
-  INSTANCES_TOPIC,
-  BUCKETS_TOPIC,
-  APPS_TOPIC,
+  instancesAsyncIterator,
+  bucketsAsyncIterator,
+  appsAsyncIterator,
 } from '../pubsub'
 import {
   stopInstance,
@@ -57,15 +57,15 @@ export const resolvers = {
   Subscription: {
     instances: {
       resolve: (payload, args, context, info) => payload,
-      subscribe: () => pubsub.asyncIterator(INSTANCES_TOPIC),
+      subscribe: () => instancesAsyncIterator(),
     },
     buckets: {
       resolve: (payload, args, context, info) => payload,
-      subscribe: () => pubsub.asyncIterator(BUCKETS_TOPIC),
+      subscribe: () => bucketsAsyncIterator(),
     },
     apps: {
       resolve: (payload, args, context, info) => payload,
-      subscribe: () => pubsub.asyncIterator(APPS_TOPIC),
+      subscribe: () => appsAsyncIterator(),
     },
   },
   Mutation: {
