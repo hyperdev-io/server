@@ -6,6 +6,8 @@ import pubsub, {
   instancesAsyncIterator,
   bucketsAsyncIterator,
   appsAsyncIterator,
+  publishApps,
+  publishInstances,
 } from '../pubsub'
 import {
   stopInstance,
@@ -15,7 +17,7 @@ import { enhanceForBigBoat } from '../dockerComposeEnhancer'
 const {
   GraphQLDateTime
 } = require('graphql-iso-date');
-const APPSTORE_URL = 'https://raw.githubusercontent.com/bigboat-io/appstore/master/apps.yml?token=AChK-uCF7BEPyjje2LKLBCd7friWScbwks5aUMgYwA%3D%3D'
+const APPSTORE_URL = 'https://ff180a31494b3466ec1557972843d7cc86c8ae62@raw.githubusercontent.com/bigboat-io/appstore/master/apps.yml'
 
 const pFindAll = (db) => new Promise((resolve, reject) => db.find({}, (err, docs) => resolve(docs)))
 
@@ -70,9 +72,10 @@ export const resolvers = {
   },
   Mutation: {
     createOrUpdateApp: async (root, data, {db: {Apps}}) => {
-      data.tags = []
+      data.tags = [] //TODO: parse tags from bigboatCompose
       return new Promise((resolve, reject) => {
         Apps.update(_.pick(data, 'name', 'version'), {$set:data}, {upsert:true, returnUpdatedDocs: true}, (err, numDocs, doc) => resolve(doc))
+        pFindAll(Apps).then(docs => publishApps(docs))
       })
     },
     removeApp: async (root, data, {db: {Apps}}) => {
@@ -98,13 +101,16 @@ export const resolvers = {
             status: 'Request sent to agent',
             app: app,
             services: []
-          }, (err, newDoc) => resolve(newDoc))
-          startInstance({
-            app: app,
-            instance: {
-              name: data.name,
-              options: data.options
-            }
+          }, (err, newDoc) => {
+            startInstance({
+              app: app,
+              instance: {
+                name: data.name,
+                options: data.options
+              }
+            })
+            pFindAll(Instances).then(docs => publishInstances(docs))
+            resolve(newDoc)
           })
         })
       })
