@@ -8,10 +8,12 @@ import pubsub, {
   appsAsyncIterator,
   publishApps,
   publishInstances,
+  publishBuckets,
 } from '../pubsub'
 import {
   stopInstance,
   startInstance,
+  deleteBucket,
 } from '../mqtt'
 import { enhanceForBigBoat } from '../dockerComposeEnhancer'
 const {
@@ -146,6 +148,12 @@ export const resolvers = {
 
         })
       }) 
+    },
+    deleteBucket: async (root, data, { db: { Buckets } }) => {
+      Buckets.update({ name: data.name }, {$set: { isLocked: true }}, (err, numDocs) => {
+        pFindAll(Buckets).then(docs => publishBuckets(docs))
+      })
+      deleteBucket(data.name)
     },
   }
 }
