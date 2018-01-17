@@ -124,6 +124,8 @@ type Mutation {
   removeApp(name: String!, version: String!): Int!
   stopInstance(name: String!): Instance!
   startInstance(name: String!, appName: String!, appVersion: String!, parameters: JSON, options: Options): Instance!
+  copyBucket(name: String!, newName: String!): Bucket!
+  deleteBucket(name: String!): Int!
 }
 
 `;
