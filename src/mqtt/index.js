@@ -2,6 +2,7 @@ import swarmHandler from './docker/swarm'
 import bucketHandler from './buckets'
 
 var _mqtt;
+const publishJson = (topic, json) => _mqtt.publish(topic, JSON.stringify(json), { qos: 2})
 
 export default (db, mqtt) => {
     _mqtt = mqtt
@@ -20,10 +21,8 @@ export default (db, mqtt) => {
 
 }
 
-export const stopInstance = (data) => {
-    _mqtt.publish('/commands/instance/stop', JSON.stringify(data), {qos: 2})
-}
+export const stopInstance = (data) => publishJson('/commands/instance/stop', data)
 
-export const startInstance = (data) => {
-    _mqtt.publish('/commands/instance/start', JSON.stringify(data), {qos: 2})
-}
+export const startInstance = (data) => publishJson('/commands/instance/start', data)
+
+export const deleteBucket = (name) => publishJson('/commands/storage/bucket/delete', {name})
