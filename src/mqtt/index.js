@@ -26,3 +26,5 @@ export const stopInstance = (data) => publishJson('/commands/instance/stop', dat
 export const startInstance = (data) => publishJson('/commands/instance/start', data)
 
 export const deleteBucket = (name) => publishJson('/commands/storage/bucket/delete', {name})
+
+export const copyBucket = (source, destination) => publishJson('/commands/storage/bucket/copy', {source, destination})

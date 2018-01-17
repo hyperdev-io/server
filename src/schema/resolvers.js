@@ -14,6 +14,7 @@ import {
   stopInstance,
   startInstance,
   deleteBucket,
+  copyBucket,
 } from '../mqtt'
 import { enhanceForBigBoat } from '../dockerComposeEnhancer'
 const {
@@ -154,6 +155,17 @@ export const resolvers = {
         pFindAll(Buckets).then(docs => publishBuckets(docs))
       })
       deleteBucket(data.name)
+      return 1
+    },
+    copyBucket: async (root, data, { db: { Buckets } }) => {
+      return new Promise((resolve, reject) => {
+        Buckets.update({ name: data.sourceName }, { $set: { isLocked: true } }, (err, numDocs) => {
+          Buckets.insert({ name: data.destinationName, isLocked: true}, (err, newDoc) => {
+            copyBucket(data.sourceName, data.destinationName)
+            resolve(newDoc)
+          })
+        })
+      })
     },
   }
 }
