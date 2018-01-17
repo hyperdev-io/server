@@ -1,8 +1,5 @@
 import { publishInstances } from '../../pubsub'
 
-console.log('ieeeeeeeeeeee', publishInstances);
-
-
 module.exports = (Instances) => (instances) => {
   const ts = Date.now()
   for (let instName in instances) {
