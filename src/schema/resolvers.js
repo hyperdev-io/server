@@ -80,8 +80,10 @@ export const resolvers = {
     },
     removeApp: async (root, data, {db: {Apps}}) => {
       return new Promise((resolve, reject) => {
-        Apps.remove(_.pick(data, 'name', 'version'), {}, (err, numRemoved) => resolve(numRemoved))
-        pFindAll(Apps).then(docs => publishApps(docs))
+        Apps.remove(_.pick(data, 'name', 'version'), {}, (err, numRemoved) => {
+          resolve(numRemoved)
+          pFindAll(Apps).then(docs => publishApps(docs))
+        })
       })
     },
     startInstance: async (root, data, {db: {Instances, Apps}}) => {
