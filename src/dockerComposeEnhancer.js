@@ -24,11 +24,8 @@ const oneoffMods = (serviceName, service, bigboatService) => {
     }
     return {};
 }
-const storageBucketLabel = options => {
-    if (options.storageBucket){
-        return {labels: {'bigboat.storage.bucket': options.storageBucket}}
-    }
-    return {}
+const storageBucketLabel = (options) => {
+    return {labels: {'bigboat.storage.bucket': options.storageBucket}}
 }
 const endpointPathLabel = bigboatCompose => {
     if (bigboatCompose.endpoint){
