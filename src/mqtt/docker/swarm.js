@@ -7,7 +7,7 @@ module.exports = (Instances) => (instances) => {
     instance._ts = ts
     Instances.update({name: instName}, {$set: instance}, {upsert: true})
   }
-  Instances.remove({_ts: {$ne: ts}})
+  Instances.remove({ $and: [{_ts: {$ne: ts}}, {state: {$ne: 'created'}}]})
   Instances.find({}, (err, docs) => publishInstances(docs))
   
 };
