@@ -74,8 +74,9 @@ export const resolvers = {
     },
   },
   Mutation: {
-    createOrUpdateApp: async (root, data, {db: {Apps}}) => {
-      data.tags = [] //TODO: parse tags from bigboatCompose
+    createOrUpdateApp: async (root, data, {db: {Apps}}) => {      
+      const bigboatCompose = yaml.safeLoad(data.bigboatCompose)
+      data.tags = bigboatCompose.tags || []
       return new Promise((resolve, reject) => {
         Apps.update(_.pick(data, 'name', 'version'), {$set:data}, {upsert:true, returnUpdatedDocs: true}, (err, numDocs, doc) => resolve(doc))
         pFindAll(Apps).then(docs => publishApps(docs))
@@ -97,11 +98,11 @@ export const resolvers = {
             return reject(`App ${data.appName}:${data.appVersion} does not exist.`)
           }
           const options = data.options || { storageBucket: data.name}
-          const app = enhanceForBigBoat(data.name, data.options, doc)
+          const app = enhanceForBigBoat(data.name, options, doc)
           console.log(app);
           Instances.insert({
             name: data.name,
-            storageBucket: data.options.storageBucket,
+            storageBucket: options.storageBucket,
             startedBy: 'TBD',
             state: 'created',
             desiredState: 'running',
@@ -113,7 +114,7 @@ export const resolvers = {
               app: app,
               instance: {
                 name: data.name,
-                options: data.options
+                options: options
               }
             })
             pFindAll(Instances).then(docs => publishInstances(docs))
