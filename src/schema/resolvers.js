@@ -96,6 +96,7 @@ export const resolvers = {
           if(doc == null) {
             return reject(`App ${data.appName}:${data.appVersion} does not exist.`)
           }
+          const options = data.options || { storageBucket: data.name}
           const app = enhanceForBigBoat(data.name, data.options, doc)
           console.log(app);
           Instances.insert({
