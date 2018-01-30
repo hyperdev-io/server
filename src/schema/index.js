@@ -1,5 +1,5 @@
-import {makeExecutableSchema} from 'graphql-tools'
-import {resolvers}            from './resolvers'
+import { makeExecutableSchema } from "graphql-tools";
+import { resolvers } from "./resolvers";
 
 export const typeDefs = `
 
@@ -31,13 +31,6 @@ type AppInfo {
   name: String!
   version: String!
 }
-type LogsInfo {
-  n200: String
-  n500: String
-  n1000: String
-  all: String
-  follow: String
-}
 type ContainerInfo {
   id: ID!
   name: [String!]!
@@ -50,7 +43,7 @@ type ServiceInfo {
   ip: String
   state: String
   errors: String
-  logs: LogsInfo
+  logs: [String]
   container: ContainerInfo
   ports: [String!]
 }
@@ -65,7 +58,7 @@ type Instance {
   state: String
   desiredState: String
   status: String
-  services: [ServiceInfo]!
+  services(name: String): [ServiceInfo]!
 }
 
 type Bucket {
@@ -97,7 +90,7 @@ type Query {
   # Returns a list of all applications
   apps: [App!]!
   # Returns a list of all instances
-  instances: [Instance!]!
+  instances(name: String): [Instance!]!
   buckets: [Bucket!]!
   resources: [Resource!]!
   datastores: [DataStore!]!
@@ -130,5 +123,4 @@ type Mutation {
 
 `;
 
-
-module.exports = makeExecutableSchema({typeDefs, resolvers});
+module.exports = makeExecutableSchema({ typeDefs, resolvers });
