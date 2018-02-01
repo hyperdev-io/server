@@ -14,7 +14,7 @@ import { stopInstance, startInstance, deleteBucket, copyBucket } from "../mqtt";
 import { enhanceForBigBoat } from "../dockerComposeEnhancer";
 const { GraphQLDateTime } = require("graphql-iso-date");
 const APPSTORE_URL =
-  "https://ff180a31494b3466ec1557972843d7cc86c8ae62@raw.githubusercontent.com/bigboat-io/appstore/master/apps.yml";
+  "https://raw.githubusercontent.com/bigboat-io/appstore/master/apps.yml";
 
 const pFindAll = (db, filter = {}) =>
   new Promise((resolve, reject) =>
@@ -117,9 +117,11 @@ export const resolvers = {
                 `App ${data.appName}:${data.appVersion} does not exist.`
               );
             }
-            const options = data.options || { storageBucket: data.name };
+            const options =
+              data.options && Object.keys(data.options).length > 0
+                ? data.options
+                : { storageBucket: data.name };
             const app = enhanceForBigBoat(data.name, options, doc);
-            console.log(app);
             Instances.insert(
               {
                 name: data.name,
