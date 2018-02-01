@@ -16,10 +16,8 @@ const { GraphQLDateTime } = require("graphql-iso-date");
 const APPSTORE_URL =
   "https://raw.githubusercontent.com/bigboat-io/appstore/master/apps.yml";
 
-const pFindAll = (db, filter = {}) =>
-  new Promise((resolve, reject) =>
-    db.find(filter, (err, docs) => resolve(docs))
-  );
+const pFindAll = db =>
+  new Promise((resolve, reject) => db.find({}, (err, docs) => resolve(docs)));
 
 export const resolvers = {
   JSON: GraphQLJSON,
