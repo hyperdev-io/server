@@ -4,7 +4,7 @@
   "description": "BigBoat Server Application.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "echo \"Error: no test specified\" && exit 0",
     "dev": "MQTT_URL=mqtt://localhost nodemon ./src/index.js --exec babel-node",
     "build": "babel src -d dist",
     "serve": "node dist/index.js"
