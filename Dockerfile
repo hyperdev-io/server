@@ -5,7 +5,8 @@ WORKDIR /src
 ADD ./dist .
 ADD ./package.json .
 
-RUN apk add --update python make gcc g++ 
-RUN npm i --production
+RUN apk add --no-cache --virtual .build-deps python make gcc g++ \
+    && npm i --production \
+    && apk del .build-deps
 
 CMD ["node",  "index.js"]
