@@ -1,0 +1,42 @@
+machine:
+  node:
+    version: 8.0.0
+  services:
+    - docker
+
+dependencies:
+  override:
+    - npm i
+    - npm run build
+    - docker build -t bigboat/server .
+
+# test:
+#   override:
+#     - npm test
+
+deployment:
+  master:
+    branch: master
+    commands:
+      - docker tag bigboat/server bigboat/server:development
+      - docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS
+      - docker push bigboat/server:development
+
+  tags:
+    tag: /^[0-9]+\.[0-9]+\.[0-9]+$/
+    commands:
+      - docker tag bigboat/server bigboat/server:${CIRCLE_TAG}
+      - MAJOR_VERSION=${CIRCLE_TAG/.*}; docker tag bigboat/server:${CIRCLE_TAG} bigboato/server:${MAJOR_VERSION}
+      - MINOR_VERSION=${CIRCLE_TAG%.*}; docker tag bigboat/server:${CIRCLE_TAG} bigboat/server:${MINOR_VERSION}
+      - docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS
+      - docker push bigboat/server
+      - docker push bigboat/server:${CIRCLE_TAG}
+      - docker push bigboat/server:${MINOR_VERSION}
+      - docker push bigboat/server:${MAJOR_VERSION}
+
+  features:
+    branch: /^feature.*$/
+    commands:
+      - docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS
+      - docker tag bigboat/server:latest bigboat/server:${CIRCLE_BRANCH}
+      - docker push bigboat/server:${CIRCLE_BRANCH}

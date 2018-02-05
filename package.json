@@ -5,9 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "nodemon":
-      "MQTT_URL=mqtt://localhost nodemon ./src/index.js --exec babel-node --presets es2015,stage-2",
-    "build": "babel lib -d dist --presets es2015,stage-2",
+    "dev": "MQTT_URL=mqtt://localhost nodemon ./src/index.js --exec babel-node",
+    "build": "babel src -d dist",
     "serve": "node dist/index.js"
   },
   "keywords": [],
@@ -38,9 +37,10 @@
     "zombie": "^5.0.7"
   },
   "devDependencies": {
-    "babel-cli": "^6.26.0",
-    "babel-preset-es2015": "^6.24.1",
-    "babel-preset-stage-2": "^6.24.1",
+    "@babel/cli": "^7.0.0-beta.36",
+    "@babel/core": "^7.0.0-beta.36",
+    "@babel/node": "^7.0.0-beta.39",
+    "@babel/preset-env": "^7.0.0-beta.39",
     "nodemon": "^1.12.1"
   }
 }
