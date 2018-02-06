@@ -1,4 +1,4 @@
 /node_modules/
 /.mongo_data/
-*.db
+/data
 /dist/
