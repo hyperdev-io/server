@@ -1,7 +1,7 @@
 {
-  "name": "@bigboat/server",
+  "name": "@hyperdev-io/server",
   "version": "1.1.0",
-  "description": "BigBoat Server Application.",
+  "description": "HyperDev Server Application.",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 0",
