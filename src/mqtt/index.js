@@ -1,30 +1,54 @@
-import swarmHandler from './docker/swarm'
-import bucketHandler from './buckets'
+import _ from "lodash";
+import swarmHandler from "./docker/swarm";
+import bucketHandler from "./buckets";
+import psmqttHandler from "./psmqtt"
+
+const TOPIC_INSTANCES = "/bigboat/instances";
+const TOPIC_BUCKETS = "/agent/storage/buckets";
+const TOPIC_PSMQTT = "psmqtt/#";
+
+const SUBSCRIBE_TO_TOPICS = [TOPIC_INSTANCES, TOPIC_BUCKETS, TOPIC_PSMQTT];
 
 var _mqtt;
-const publishJson = (topic, json) => _mqtt.publish(topic, JSON.stringify(json), { qos: 2})
+const publishJson = (topic, json) =>
+  _mqtt.publish(topic, JSON.stringify(json), { qos: 2 });
+
+const unknownTopicHandler = topic => data =>
+  console.log("received data for unknown topic", topic, data);
+
+const selectHandler = db => topic => {
+  switch (topic) {
+    case TOPIC_INSTANCES: {
+      return swarmHandler(db.Instances);
+    }
+    case TOPIC_BUCKETS: {
+      return bucketHandler(db.Buckets);
+    }
+    default: {
+      if (_.startsWith(topic, "psmqtt/")) return psmqttHandler(db.Resources)(topic);
+      else return unknownTopicHandler(topic);
+    }
+  }
+};
 
 export default (db, mqtt) => {
-    _mqtt = mqtt
+  _mqtt = mqtt;
 
-    const handlers = {}
-    const subscribe = (topicName, handler) => {
-        handlers[topicName] = handler
-        mqtt.subscribe(topicName);
-    }
-    mqtt.on('message', (topic, data) => handlers[topic](JSON.parse(data.toString())))
+  mqtt.on("message", (topic, data) => {
+    selectHandler(db)(topic)(JSON.parse(data.toString()));
+  });
 
-    const publish = (topic, msg, options = {}) => mqtt.publish(topic, JSON.stringify(msg), options)
+  SUBSCRIBE_TO_TOPICS.forEach(t => _mqtt.subscribe(t));
+};
 
-    subscribe('/bigboat/instances', swarmHandler(db.Instances))
-    subscribe('/agent/storage/buckets', bucketHandler(db.Buckets))
+export const stopInstance = data =>
+  publishJson("/commands/instance/stop", data);
 
-}
+export const startInstance = data =>
+  publishJson("/commands/instance/start", data);
 
-export const stopInstance = (data) => publishJson('/commands/instance/stop', data)
+export const deleteBucket = name =>
+  publishJson("/commands/storage/bucket/delete", { name });
 
-export const startInstance = (data) => publishJson('/commands/instance/start', data)
-
-export const deleteBucket = (name) => publishJson('/commands/storage/bucket/delete', {name})
-
-export const copyBucket = (source, destination) => publishJson('/commands/storage/bucket/copy', {source, destination})
+export const copyBucket = (source, destination) =>
+  publishJson("/commands/storage/bucket/copy", { source, destination });

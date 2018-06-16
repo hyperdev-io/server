@@ -6,6 +6,7 @@ import pubsub, {
   instancesAsyncIterator,
   bucketsAsyncIterator,
   appsAsyncIterator,
+  resourcesAsyncIterator,
   publishApps,
   publishInstances,
   publishBuckets
@@ -37,6 +38,16 @@ export const resolvers = {
         .then(text => yaml.safeLoad(text));
     }
   },
+  Resource: {
+    __resolveType(obj, context, info) {
+      if (obj.type === "compute") {
+        return "ComputeNode";
+      } else if (obj.type === "storage") {
+        return "StorageNode";
+      }
+      return null;
+    }
+  },
   App: {
     id: app => app._id
   },
@@ -53,9 +64,6 @@ export const resolvers = {
   },
   Bucket: {
     id: b => b._id
-  },
-  Resource: {
-    id: r => r._id
   },
   DataStore: {
     id: ds => ds._id
@@ -82,7 +90,11 @@ export const resolvers = {
     apps: {
       resolve: (payload, args, context, info) => payload,
       subscribe: () => appsAsyncIterator()
-    }
+    },
+    resources: {
+      resolve: (payload, args, context, info) => payload,
+      subscribe: () => resourcesAsyncIterator()
+    },
   },
   Mutation: {
     createOrUpdateApp: async (root, data, { db: { Apps } }) => {

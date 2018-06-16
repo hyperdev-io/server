@@ -67,15 +67,6 @@ type Bucket {
   isLocked: Boolean!
 }
 
-type Resource {
-  id: ID!
-  name: String!
-  lastCheck: String!
-  isUp: Boolean!
-  description: String!
-  details: JSON!
-}
-
 type DataStore {
   id: ID!
   name: String!
@@ -83,6 +74,37 @@ type DataStore {
   total: String
   used: String
   createdAt: DateTime
+}
+
+type CPU {
+  idle: Float!
+  used: Float!
+  iowait: Float!
+}
+type Memory {
+  total: Float!
+  used: Float!
+}
+type Disk {
+  total: Float!
+  used: Float!
+  free: Float!
+}
+interface Resource {
+  name: String!
+  lastUpdated: String!
+}
+type ComputeNode implements Resource {
+  name: String!
+  lastUpdated: String!
+  cpu: CPU
+  memory: Memory
+  disk: Disk
+}
+type StorageNode implements Resource {
+  name: String!
+  lastUpdated: String!
+  disk: Disk
 }
 
 # The root query for BigBoat
@@ -101,6 +123,7 @@ type Subscription {
     instances: [Instance!]!
     buckets: [Bucket!]!
     apps: [App!]!
+    resources: [Resource!]!
 }
 
 input Options {
