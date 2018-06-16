@@ -41,8 +41,8 @@ const start = async () => {
     schema
   }));
   app.use('/graphiql', graphiqlExpress({
-    endpointURL: '/graphql',
-    subscriptionsEndpoint: `ws://localhost:${PORT}/subscriptions`,
+    endpointURL: '/api/graphql',
+    subscriptionsEndpoint: `ws://localhost:8080/api/subscriptions`,
   }));
   const server = createServer(app);
   server.listen(PORT, () => {
