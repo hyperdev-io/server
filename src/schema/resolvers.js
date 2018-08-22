@@ -28,14 +28,22 @@ export const resolvers = {
   Query: {
     apps: async (root, args, context) => pFindAll(context.db.Apps),
     instances: async (root, args, context) =>
-      pFindAll(context.db.Instances, args),
+        pFindAll(context.db.Instances, args),
     buckets: async (root, args, context) => pFindAll(context.db.Buckets),
     resources: async (root, args, context) => pFindAll(context.db.Resources),
     datastores: async (root, args, context) => pFindAll(context.db.DataStores),
     appstoreApps: async (root, args, context) => {
-      return fetch(APPSTORE_URL)
-        .then(res => res.text())
-        .then(text => yaml.safeLoad(text));
+        return fetch(APPSTORE_URL)
+            .then(res => res.text())
+            .then(text => yaml.safeLoad(text));
+    },
+    currentUser: (root, args, context) => {
+      console.log(root, context)
+      return {
+        name: context.request.user.nickname,
+        email: context.request.user.name,
+        picture: context.request.user.picture
+      }
     }
   },
   Resource: {

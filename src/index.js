@@ -8,9 +8,32 @@ const {graphqlExpress, graphiqlExpress} = require('apollo-server-express');
 import { SubscriptionServer } from 'subscriptions-transport-ws';
 import { execute, subscribe } from 'graphql';
 const schema = require('./schema');
+const jwt = require('express-jwt');
+const jwtAuthz = require('express-jwt-authz');
+const jwksRsa = require('jwks-rsa');
+const jwt_decode = require('jwt-decode');
+
 
 
 const connectNedb = require('./nedb-connector');
+
+const checkJwt = jwt({
+    // Dynamically provide a signing key
+    // based on the kid in the header and
+    // the signing keys provided by the JWKS endpoint.
+    secret: jwksRsa.expressJwtSecret({
+        cache: true,
+        rateLimit: true,
+        jwksRequestsPerMinute: 5,
+        jwksUri: `https://hyperdev.eu.auth0.com/.well-known/jwks.json`
+    }),
+
+    // Validate the audience and the issuer.
+    audience: '',
+    issuer: `https://hyperdev.eu.auth0.com/`,
+    algorithms: ['RS256']
+});
+
 
 const PORT = 3010;
 const CFG = {
@@ -35,13 +58,14 @@ const start = async () => {
   const db = await connectNedb();
   var app = express();
   app.use(cors())
+  app.use(checkJwt)
   app.use(bodyParser.urlencoded({extended: true, limit: '50mb'}))
-  app.use('/graphql', bodyParser.json({ limit: '50mb' }), graphqlExpress({
-    context: {db},
+  app.use('/graphql', bodyParser.json({ limit: '50mb' }), graphqlExpress( request => ({
+    context: {db, request},
     schema
-  }));
+  })));
   app.use('/graphiql', graphiqlExpress({
-    endpointURL: '/api/graphql',
+    endpointURL: '/graphql',
     subscriptionsEndpoint: `ws://localhost:8080/api/subscriptions`,
   }));
   const server = createServer(app);
@@ -51,6 +75,13 @@ const start = async () => {
       execute,
       subscribe,
       schema: schema,
+      onConnect: (connectionParams, webSocket) => {
+        console.log("connectionParams", connectionParams)
+        if(connectionParams.token){
+            return { user: jwt_decode(connectionParams.token) }
+        }
+        throw new Error("Missing auth token")
+      },
     }, {
       server: server,
       path: '/subscriptions',

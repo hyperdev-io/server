@@ -107,6 +107,12 @@ type StorageNode implements Resource {
   disk: Disk
 }
 
+type User {
+  name: String!
+  email: String!
+  picture: String!
+}
+
 # The root query for BigBoat
 type Query {
   # Returns a list of all applications
@@ -117,6 +123,7 @@ type Query {
   resources: [Resource!]!
   datastores: [DataStore!]!
   appstoreApps: [AppstoreApp!]!
+  currentUser: User!
 }
 
 type Subscription {
