@@ -5,7 +5,6 @@ module.exports = Resources => topic => resources => {
   const type = topic.split("/")[1];
   const nodeName = topic.split("/")[2];
   const resource = topic.split("/")[3];
-  console.log(type, nodeName, resource, resources);
   const obj = {};
   if (resource === "cpu_percent") {
     obj.cpu = {
@@ -30,5 +29,4 @@ module.exports = Resources => topic => resources => {
   obj.type = type;
   Resources.update({ name: nodeName }, { $set: obj }, { upsert: true });
   Resources.find({}, (err, docs) => publishResources(docs));
-  Resources.find({}, (err, docs) => console.log(docs));
 };
