@@ -134,7 +134,8 @@ export const resolvers = {
                 ? data.options
                 : { storageBucket: data.name };
             const app = enhanceForBigBoat(data.name, options, doc);
-            Instances.insert(
+            Instances.update(
+              {name: data.name},
               {
                 name: data.name,
                 storageBucket: options.storageBucket,
@@ -145,7 +146,8 @@ export const resolvers = {
                 app: app,
                 services: []
               },
-              (err, newDoc) => {
+              {upsert: true, returnUpdatedDocs: true},
+              (err, numAffected, affectedDocuments, upsert) => {
                 startInstance({
                   app: app,
                   instance: {
@@ -154,7 +156,7 @@ export const resolvers = {
                   }
                 });
                 pFindAll(Instances).then(docs => publishInstances(docs));
-                resolve(newDoc);
+                resolve(affectedDocuments);
               }
             );
           }
