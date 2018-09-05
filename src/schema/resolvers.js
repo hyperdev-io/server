@@ -13,6 +13,7 @@ import pubsub, {
 } from "../pubsub";
 import { stopInstance, startInstance, deleteBucket, copyBucket } from "../mqtt";
 import { enhanceForBigBoat } from "../dockerComposeEnhancer";
+import {AppDoesNotExistError, InvalidInstanceNameError} from './errors';
 const { GraphQLDateTime } = require("graphql-iso-date");
 const APPSTORE_URL =
   "https://raw.githubusercontent.com/bigboat-io/appstore/master/apps.yml";
@@ -120,14 +121,16 @@ export const resolvers = {
     },
     startInstance: async (root, data, { db: { Instances, Apps } }) => {
       console.log("startInstance", data);
+      const regex = /^(?:[A-Za-z0-9][A-Za-z0-9\-]{0,30}[A-Za-z0-9]|[A-Za-z0-9])$/
       return new Promise((resolve, reject) => {
+        if(!data.name.match(regex)){
+          return reject(new InvalidInstanceNameError({name: data.name, regex: `${regex}`}));
+        }
         Apps.findOne(
           { name: data.appName, version: data.appVersion },
           (err, doc) => {
             if (doc == null) {
-              return reject(
-                `App ${data.appName}:${data.appVersion} does not exist.`
-              );
+              return reject(new AppDoesNotExistError(data));
             }
             const options =
               data.options && Object.keys(data.options).length > 0

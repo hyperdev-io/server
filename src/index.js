@@ -38,7 +38,14 @@ const start = async () => {
   app.use(bodyParser.urlencoded({extended: true, limit: '50mb'}))
   app.use('/graphql', bodyParser.json({ limit: '50mb' }), graphqlExpress({
     context: {db},
-    schema
+    schema,
+    formatError: error => ({
+      message: error.message,
+      props: error.originalError && error.originalError.props,
+      info: error.originalError && error.originalError.info,
+      locations: error.locations,
+      path: error.path,
+    }),
   }));
   app.use('/graphiql', graphiqlExpress({
     endpointURL: '/graphql',
