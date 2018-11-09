@@ -120,10 +120,10 @@ type Query {
 }
 
 type Subscription {
-    instances: [Instance!]!
-    buckets: [Bucket!]!
-    apps: [App!]!
-    resources: [Resource!]!
+  instances: [Instance!]!
+  buckets: [Bucket!]!
+  apps: [App!]!
+  resources: [Resource!]!
 }
 
 input Options {

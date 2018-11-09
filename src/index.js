@@ -36,38 +36,71 @@ const start = async () => {
   mqttClient.on('connect', () => console.log('MQTT::Connected'))
   mqttClient.on('error', (err) => console.log('MQTT::An error occured', err))
   mqttClient.on('close', () => console.log('MQTT connection closed'))
-  
+
+  const getUserForToken = (token, cb) => db.AccessTokens.findOne({ token }, (err, at) => cb(at ? at.dn : false));
+
+  const authMiddleware = (req, res, next) => {
+    let token;
+    const authHeader = req.get('Authorization');
+    if(authHeader && authHeader.split(' ')[0] === 'Bearer'){
+      token = authHeader.split(' ')[1];
+    }
+    if (token) {
+      getUserForToken(token, userDn => {
+        if(userDn){
+          console.log('token presented for user', token, userDn);
+          next();
+        } else {
+          res.status(401);
+          res.end();
+        }
+      })
+    } else {
+      res.status(401);
+      res.end();
+    }
+  };
 
   const db = await connectNedb();
   var app = express();
   app.use(cors())
-  app.use(bodyParser.urlencoded({extended: true, limit: '50mb'}))
+  app.use(bodyParser.urlencoded({extended: true, limit: '10mb'}));
   app.post('/account/login', bodyParser.json({limit: '10kb'}), (request, response) => {
     const credentials = request.body;
+    if(!credentials.username || !credentials.password){
+      response.status(401);
+      response.end();
+      return;
+    }
     const client = ldap.createClient({ url: CFG.ldap.url });
     client.bind(CFG.ldap.adminDn, CFG.ldap.adminPassword, (err, a,b,c) => {
       response.setHeader('Content-Type', 'application/json');
       var opts = {
         filter: `(uid=${credentials.username})`,
         scope: 'sub',
-        attributes: ['dn']
+        attributes: ['dn', 'cn', 'uid', 'mail']
       };
       client.search(CFG.ldap.bindDn, opts, (err, res) => {
-        const dn = [];
-        res.on('searchEntry', entry => dn.push(entry.object.dn));
+        const entries = [];
+        res.on('searchEntry', entry => entries.push(entry) );
         res.on('end', () => {
-          if(dn.length){
-            client.bind(dn[0], credentials.password, function(err) {
+          if(entries.length){
+            const user = entries[0].object
+            console.log('ldap user found', user)
+            client.bind(user.dn, credentials.password, function(err) {
               if( err ){
                 response.status(401);
                 response.end();
               } else {
-                db.Accounts.findOne({dn: dn[0]}, (err, account) => {
+                db.Accounts.findOne({dn: user.dn}, (err, account) => {
                   if(account === null){
-                    db.Accounts.insert({dn: dn[0]});
-                    db.AccessTokens.insert({dn: dn[0], token: uuidv1()})
+                    db.Accounts.insert({dn: user.dn, mail: user.mail, name: user.cn.length ? user.cn[0] : user.cn});
+                    db.AccessTokens.insert({dn: user.dn, token: uuidv1()})
+                  } else {
+                    console.log('ACCOUNT !!!', account)
+                    db.Accounts.update({dn: user.dn}, {$set: {mail: user.mail, name: user.cn.length ? user.cn[0] : user.cn}});
                   }
-                  db.AccessTokens.findOne({dn: dn[0]}, (err, at) => {
+                  db.AccessTokens.findOne({dn: user.dn}, (err, at) => {
                     response.end(JSON.stringify({token: at.token}));
                   })
                 });
@@ -87,7 +120,7 @@ const start = async () => {
     // });
 
   });
-  app.use('/graphql', bodyParser.json({ limit: '50mb' }), graphqlExpress({
+  app.use('/graphql', authMiddleware, bodyParser.json({ limit: '50mb' }), graphqlExpress({
     context: {db},
     schema,
     formatError: error => ({
@@ -102,6 +135,7 @@ const start = async () => {
     endpointURL: '/graphql',
     subscriptionsEndpoint: `ws://localhost:8080/api/subscriptions`,
   }));
+  app.use('/subscriptions', authMiddleware)
   const server = createServer(app);
   server.listen(PORT, () => {
     console.log(`Hackernews GraphQL server running on port ${PORT}.`)
@@ -109,6 +143,19 @@ const start = async () => {
       execute,
       subscribe,
       schema: schema,
+      onConnect: (connectionParams, webSocket) => {
+        console.log("connectionParams", connectionParams)
+        if(connectionParams.token){
+          return new Promise((resolve, reject) => {
+            getUserForToken(connectionParams.token, userDn => {
+              if(userDn)
+                resolve({user: userDn});
+              else reject();
+            })
+          });
+        }
+        throw new Error("Missing auth token")
+      },
     }, {
       server: server,
       path: '/subscriptions',
