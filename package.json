@@ -31,13 +31,8 @@
     "mqtt": "^2.15.0",
     "nedb": "^1.8.0",
     "node-fetch": "^1.7.3",
-    "osmosis": "^1.1.5",
-    "papaparse": "^4.3.6",
-    "request": "^2.83.0",
     "subscriptions-transport-ws": "^0.9.4",
-    "uuid": "^3.3.2",
-    "x-ray": "^2.3.2",
-    "zombie": "^5.0.7"
+    "uuid": "^3.3.2"
   },
   "devDependencies": {
     "@babel/cli": "^7.0.0",

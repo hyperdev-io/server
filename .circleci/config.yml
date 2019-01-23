@@ -1,0 +1,60 @@
+version: 2
+
+references:
+  machine_config: &machine_config
+    working_directory: /tmp/circle
+    machine: true
+
+jobs:
+  build_push_master:
+    <<: *machine_config
+    steps:
+      - checkout
+      - run: |
+          docker login -u $DOCKER_USER -p $DOCKER_PASS
+          docker build -t hyperdev/server .
+          docker push hyperdev/server:latest
+  build_push_tag:
+    <<: *machine_config
+    steps:
+      - checkout
+      - run: |
+          docker login -u $DOCKER_USER -p $DOCKER_PASS
+          docker build -t hyperdev/server .
+          MAJOR_VERSION=${CIRCLE_TAG/.*}; docker tag hyperdev/server:latest hyperdev/server:${MAJOR_VERSION}
+          MINOR_VERSION=${CIRCLE_TAG%.*}; docker tag hyperdev/server:latest hyperdev/server:${MINOR_VERSION}
+          docker tag hyperdev/server:latest hyperdev/server:${CIRCLE_TAG}
+          docker push hyperdev/server:latest
+          docker push hyperdev/server:${CIRCLE_TAG}
+          docker push hyperdev/server:${MINOR_VERSION}
+          docker push hyperdev/server:${MAJOR_VERSION}
+  build_push_branch:
+    <<: *machine_config
+    steps:
+      - checkout
+      - run: |
+          docker login -u $DOCKER_USER -p $DOCKER_PASS
+          docker build -t hyperdev/server .
+          docker tag hyperdev/server:latest hyperdev/server:${CIRCLE_BRANCH}
+          docker push hyperdev/server:latest
+          docker push hyperdev/server:${CIRCLE_BRANCH}
+workflows:
+  version: 2
+  build_push:
+    jobs:
+      - build_push_master:
+          filters:
+            branches:
+              only: master
+      - build_push_branch:
+          filters:
+            tags:
+              ignore: /.*/
+            branches:
+              only: /^feature.*$/
+      - build_push_tag:
+          filters:
+            tags:
+              only: /^[0-9]+\.[0-9]+\.[0-9]+$/
+            branches:
+              ignore: /.*/

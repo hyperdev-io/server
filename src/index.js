@@ -138,7 +138,7 @@ const start = async () => {
   app.use('/subscriptions', authMiddleware)
   const server = createServer(app);
   server.listen(PORT, () => {
-    console.log(`Hackernews GraphQL server running on port ${PORT}.`)
+    console.log(`HyperDev GraphQL server running on port ${PORT}.`)
     new SubscriptionServer({
       execute,
       subscribe,
