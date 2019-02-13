@@ -73,7 +73,7 @@ const start = async () => {
       return;
     }
     const client = ldap.createClient({ url: CFG.ldap.url });
-    client.bind(CFG.ldap.adminDn, CFG.ldap.adminPassword, (err, a,b,c) => {
+    client.bind(CFG.ldap.adminDn, CFG.ldap.adminPassword, (err) => {
       response.setHeader('Content-Type', 'application/json');
       var opts = {
         filter: `(uid=${credentials.username})`,
@@ -86,7 +86,6 @@ const start = async () => {
         res.on('end', () => {
           if(entries.length){
             const user = entries[0].object
-            console.log('ldap user found', user)
             client.bind(user.dn, credentials.password, function(err) {
               if( err ){
                 response.status(401);
@@ -97,7 +96,6 @@ const start = async () => {
                     db.Accounts.insert({dn: user.dn, mail: user.mail, name: user.cn.length ? user.cn[0] : user.cn});
                     db.AccessTokens.insert({dn: user.dn, token: uuidv1()})
                   } else {
-                    console.log('ACCOUNT !!!', account)
                     db.Accounts.update({dn: user.dn}, {$set: {mail: user.mail, name: user.cn.length ? user.cn[0] : user.cn}});
                   }
                   db.AccessTokens.findOne({dn: user.dn}, (err, at) => {
@@ -112,12 +110,7 @@ const start = async () => {
           }
         });
       })
-
-      // console.log('admin login', err, a)
     })
-    // client.bind(credentials.username, credentials.password, function(err, a,b,c) {
-    //   console.log('bind', err,a,b,c);
-    // });
 
   });
   app.use('/graphql', authMiddleware, bodyParser.json({ limit: '50mb' }), graphqlExpress({
