@@ -1,7 +1,7 @@
 import _ from "lodash";
 import { publishResources } from "../pubsub";
 
-module.exports = Resources => topic => resources => {
+export default Resources => topic => resources => {
   const type = topic.split("/")[1];
   const nodeName = topic.split("/")[2];
   const resource = topic.split("/")[3];

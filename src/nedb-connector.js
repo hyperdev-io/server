@@ -1,4 +1,4 @@
-const Datastore = require('nedb')
+import Datastore from 'nedb';
 
 const db = {
   Instances: new Datastore(),
@@ -10,6 +10,6 @@ const db = {
   DataStores: new Datastore(),
 }
 
-module.exports = async () => {
+export default () => {
   return db
 }

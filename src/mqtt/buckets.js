@@ -1,7 +1,7 @@
 import _ from 'lodash'
 import {publishBuckets} from '../pubsub'
 
-module.exports = (BucketsDb) => (buckets) => {
+export default (BucketsDb) => (buckets) => {
     for (let bucket of buckets) {
         BucketsDb.update({name: bucket.name}, {$set: bucket}, {upsert: true})
     }    

@@ -1,5 +1,6 @@
 import cors from 'cors'
 import mqttHandler from './mqtt'
+import connectNedb from './nedb-connector';
 const mqtt = require('mqtt')
 const express = require('express');
 import { createServer } from 'http';
@@ -10,7 +11,6 @@ import { execute, subscribe } from 'graphql';
 const schema = require('./schema');
 const ldap = require('ldapjs');
 const uuidv1 = require('uuid/v1');
-const connectNedb = require('./nedb-connector');
 
 const PORT = 3010;
 const CFG = {
@@ -61,7 +61,7 @@ const start = async () => {
     }
   };
 
-  const db = await connectNedb();
+  const db = connectNedb();
   var app = express();
   app.use(cors())
   app.use(bodyParser.urlencoded({extended: true, limit: '10mb'}));
@@ -132,7 +132,7 @@ const start = async () => {
     }),
   }));
   app.use('/graphiql', graphiqlExpress({
-    endpointURL: '/graphql',
+    endpointURL: '/api/graphql',
     subscriptionsEndpoint: `ws://localhost:8080/api/subscriptions`,
   }));
   app.use('/subscriptions', authMiddleware)
