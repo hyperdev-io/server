@@ -39,82 +39,62 @@ const start = async () => {
 
   const getUserForToken = (token, cb) => db.AccessTokens.findOne({ token }, (err, at) => cb(at ? at.dn : false));
 
-  const authMiddleware = (req, res, next) => {
-    let token;
-    const authHeader = req.get('Authorization');
-    if(authHeader && authHeader.split(' ')[0] === 'Bearer'){
-      token = authHeader.split(' ')[1];
+  const containsHeaders = (headers, ...headerNames) => headerNames.map(name => !!headers[name]).reduce((a, b) => a && b, true);
+  const extractUserFromHeaderTokens = headers => {
+    if(containsHeaders(headers, 'token-claim-admin', 'token-claim-email', 'token-claim-name', 'token-claim-nickname')){
+      return {
+        isAdmin: headers['token-claim-admin'] === 'true',
+        email: headers['token-claim-email'],
+        name: headers['token-claim-name'],
+        username: headers['token-claim-nickname'],
+      };
     }
-    if (token) {
-      getUserForToken(token, userDn => {
-        if(userDn){
-          console.log('token presented for user', token, userDn);
-          next();
-        } else {
-          res.status(401);
-          res.end();
-        }
-      })
-    } else {
-      res.status(401);
-      res.end();
-    }
+    return null;
   };
+
+  const authTokenMiddleware = (req, res, next) => {
+    const user = extractUserFromHeaderTokens(req.headers);
+    if(user){
+      req.user = user;
+      return next();
+    }
+    res.status(401);
+    res.end();
+  };
+
+  // const authMiddleware = (req, res, next) => {
+  //   let token;
+  //   console.log('headers', req.headers)
+  //   const authHeader = req.get('Authorization');
+  //   if(authHeader && authHeader.split(' ')[0] === 'Bearer'){
+  //     token = authHeader.split(' ')[1];
+  //   }
+  //   if (token) {
+  //     getUserForToken(token, dn => {
+  //       if(dn){
+  //         console.log('token presented for user', token, dn);
+  //         db.Accounts.findOne({ dn }, (err, user) => {
+  //           req.user = user;
+  //           next();
+  //         });
+  //
+  //       } else {
+  //         res.status(401);
+  //         res.end();
+  //       }
+  //     })
+  //   } else {
+  //     res.status(401);
+  //     res.end();
+  //   }
+  // };
 
   const db = connectNedb();
   var app = express();
-  app.use(cors())
+  app.use(cors());
   app.use(bodyParser.urlencoded({extended: true, limit: '10mb'}));
-  app.post('/account/login', bodyParser.json({limit: '10kb'}), (request, response) => {
-    const credentials = request.body;
-    if(!credentials.username || !credentials.password){
-      response.status(401);
-      response.end();
-      return;
-    }
-    const client = ldap.createClient({ url: CFG.ldap.url });
-    client.bind(CFG.ldap.adminDn, CFG.ldap.adminPassword, (err) => {
-      response.setHeader('Content-Type', 'application/json');
-      var opts = {
-        filter: `(uid=${credentials.username})`,
-        scope: 'sub',
-        attributes: ['dn', 'cn', 'uid', 'mail']
-      };
-      client.search(CFG.ldap.bindDn, opts, (err, res) => {
-        const entries = [];
-        res.on('searchEntry', entry => entries.push(entry) );
-        res.on('end', () => {
-          if(entries.length){
-            const user = entries[0].object
-            client.bind(user.dn, credentials.password, function(err) {
-              if( err ){
-                response.status(401);
-                response.end();
-              } else {
-                db.Accounts.findOne({dn: user.dn}, (err, account) => {
-                  if(account === null){
-                    db.Accounts.insert({dn: user.dn, mail: user.mail, name: user.cn.length ? user.cn[0] : user.cn});
-                    db.AccessTokens.insert({dn: user.dn, token: uuidv1()})
-                  } else {
-                    db.Accounts.update({dn: user.dn}, {$set: {mail: user.mail, name: user.cn.length ? user.cn[0] : user.cn}});
-                  }
-                  db.AccessTokens.findOne({dn: user.dn}, (err, at) => {
-                    response.end(JSON.stringify({token: at.token}));
-                  })
-                });
-              }
-            });
-          }else{
-            response.status(401);
-            response.end();
-          }
-        });
-      })
-    })
-
-  });
-  app.use('/graphql', authMiddleware, bodyParser.json({ limit: '50mb' }), graphqlExpress({
-    context: {db},
+  app.use('/graphql', authTokenMiddleware, bodyParser.json({ limit: '50mb' }), graphqlExpress(request => ({
+    context: {db, request},
     schema,
     formatError: error => ({
       message: error.message,
@@ -123,12 +103,12 @@ const start = async () => {
       locations: error.locations,
       path: error.path,
     }),
-  }));
+  })));
   app.use('/graphiql', graphiqlExpress({
     endpointURL: '/api/graphql',
-    subscriptionsEndpoint: `ws://localhost:8080/api/subscriptions`,
+    subscriptionsEndpoint: `ws://localhost:8081/api/subscriptions`,
   }));
-  app.use('/subscriptions', authMiddleware)
+  app.use('/subscriptions', authTokenMiddleware)
   const server = createServer(app);
   server.listen(PORT, () => {
     console.log(`HyperDev GraphQL server running on port ${PORT}.`)
@@ -137,17 +117,11 @@ const start = async () => {
       subscribe,
       schema: schema,
       onConnect: (connectionParams, webSocket) => {
-        console.log("connectionParams", connectionParams)
-        if(connectionParams.token){
-          return new Promise((resolve, reject) => {
-            getUserForToken(connectionParams.token, userDn => {
-              if(userDn)
-                resolve({user: userDn});
-              else reject();
-            })
-          });
+        const user = extractUserFromHeaderTokens(webSocket.upgradeReq.headers);
+        if(user){
+          return { user };
         }
-        throw new Error("Missing auth token")
+        throw new Error("Missing auth token");
       },
     }, {
       server: server,

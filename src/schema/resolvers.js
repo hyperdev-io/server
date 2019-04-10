@@ -37,6 +37,14 @@ export const resolvers = {
       return fetch(APPSTORE_URL)
         .then(res => res.text())
         .then(text => yaml.safeLoad(text));
+    },
+    currentUser: (root, args, context) => {
+      console.log(root, context)
+      return {
+        name: context.request.user.name,
+        email: context.request.user.email,
+        picture: ""
+      }
     }
   },
   Resource: {
