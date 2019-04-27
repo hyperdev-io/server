@@ -41,12 +41,12 @@ const start = async () => {
 
   const containsHeaders = (headers, ...headerNames) => headerNames.map(name => !!headers[name]).reduce((a, b) => a && b, true);
   const extractUserFromHeaderTokens = headers => {
-    if(containsHeaders(headers, 'token-claim-admin', 'token-claim-email', 'token-claim-name', 'token-claim-nickname')){
+    if(containsHeaders(headers, 'token-claim-roles', 'token-claim-email', 'token-claim-name', 'token-claim-nickname')){
       return {
-        isAdmin: headers['token-claim-admin'] === 'true',
-        email: headers['token-claim-email'],
         name: headers['token-claim-name'],
         username: headers['token-claim-nickname'],
+        email: headers['token-claim-email'],
+        roles: headers['token-claim-roles'].split(','),
       };
     }
     return null;
@@ -61,33 +61,6 @@ const start = async () => {
     res.status(401);
     res.end();
   };
-
-  // const authMiddleware = (req, res, next) => {
-  //   let token;
-  //   console.log('headers', req.headers)
-  //   const authHeader = req.get('Authorization');
-  //   if(authHeader && authHeader.split(' ')[0] === 'Bearer'){
-  //     token = authHeader.split(' ')[1];
-  //   }
-  //   if (token) {
-  //     getUserForToken(token, dn => {
-  //       if(dn){
-  //         console.log('token presented for user', token, dn);
-  //         db.Accounts.findOne({ dn }, (err, user) => {
-  //           req.user = user;
-  //           next();
-  //         });
-  //
-  //       } else {
-  //         res.status(401);
-  //         res.end();
-  //       }
-  //     })
-  //   } else {
-  //     res.status(401);
-  //     res.end();
-  //   }
-  // };
 
   const db = connectNedb();
   var app = express();
