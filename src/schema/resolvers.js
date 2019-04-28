@@ -2,6 +2,7 @@ import _ from "lodash";
 import GraphQLJSON from "graphql-type-json";
 import fetch from "node-fetch";
 import yaml from "js-yaml";
+import crypto from 'crypto';
 import pubsub, {
   instancesAsyncIterator,
   bucketsAsyncIterator,
@@ -17,6 +18,8 @@ import {AppDoesNotExistError, InvalidInstanceNameError} from './errors';
 const { GraphQLDateTime } = require("graphql-iso-date");
 const APPSTORE_URL =
   "https://raw.githubusercontent.com/bigboat-io/appstore/master/apps.yml";
+
+const md5 = data => crypto.createHash('md5').update(data).digest("hex");
 
 const pFindAll = (db, filter = {}) =>
   new Promise((resolve, reject) =>
@@ -43,7 +46,8 @@ export const resolvers = {
       return {
         name: context.request.user.name,
         email: context.request.user.email,
-        picture: ""
+        picture: `https://www.gravatar.com/avatar/${md5(context.request.user.email)}?d=robohash`,
+        roles: context.request.user.roles
       }
     }
   },

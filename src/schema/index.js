@@ -110,6 +110,7 @@ type User {
   name: String!
   email: String!
   picture: String!
+  roles: [String!]!
 }
 
 # The root query for BigBoat
