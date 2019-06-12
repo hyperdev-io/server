@@ -54,7 +54,7 @@ type Instance {
   agent: AgentInfo
   app: AppInfo
   storageBucket: String
-  startedBy: String
+  startedBy: User!
   state: String
   desiredState: String
   status: String
@@ -108,6 +108,12 @@ type StorageNode implements Resource {
 }
 type User {
   name: String!
+  username: String!
+  email: String!
+  picture: String!
+}
+type CurrentUser {
+  name: String!
   email: String!
   picture: String!
   roles: [String!]!
@@ -123,7 +129,7 @@ type Query {
   resources: [Resource!]!
   datastores: [DataStore!]!
   appstoreApps: [AppstoreApp!]!
-  currentUser: User!
+  currentUser: CurrentUser!
 }
 
 type Subscription {
