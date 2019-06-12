@@ -13,7 +13,7 @@ import pubsub, {
   publishBuckets
 } from "../pubsub";
 import { stopInstance, startInstance, deleteBucket, copyBucket } from "../mqtt";
-import { enhanceForBigBoat } from "../dockerComposeEnhancer";
+import { enhanceForHyperDev } from "../dockerComposeEnhancer";
 import {AppDoesNotExistError, InvalidInstanceNameError} from './errors';
 const { GraphQLDateTime } = require("graphql-iso-date");
 const APPSTORE_URL =
@@ -42,7 +42,6 @@ export const resolvers = {
         .then(text => yaml.safeLoad(text));
     },
     currentUser: (root, args, context) => {
-      console.log(root, context)
       return {
         name: context.request.user.name,
         email: context.request.user.email,
@@ -73,6 +72,20 @@ export const resolvers = {
             Object.keys(args).length != 0 ? args.name === serviceName : true
         )
         .map(key => Object.assign({ name: key }, instance.services[key]));
+    },
+    startedBy: (instance) => {
+      const service = instance.services[Object.keys(instance.services)[0]];
+
+      if (service) {
+        const labels = service.labels;
+        return {
+          name: labels.find(l => l.label === 'io.hyperdev.startedby.name').value,
+          username: labels.find(l => l.label === 'io.hyperdev.startedby.username').value,
+          email: labels.find(l => l.label === 'io.hyperdev.startedby.email').value,
+          picture: `https://www.gravatar.com/avatar/${md5(labels.find(l => l.label === 'io.hyperdev.startedby.email').value)}?d=robohash`,
+        }
+      }
+      return {name: '', username: '', email: '', picture: ''}
     }
   },
   Bucket: {
@@ -131,8 +144,8 @@ export const resolvers = {
         });
       });
     },
-    startInstance: async (root, data, { db: { Instances, Apps } }) => {
-      console.log("startInstance", data);
+    startInstance: async (root, data, { db: { Instances, Apps }, request: { user } }) => {
+      console.log("startInstance", data, user);
       const regex = /^(?:[A-Za-z0-9][A-Za-z0-9\-]{0,30}[A-Za-z0-9]|[A-Za-z0-9])$/
       return new Promise((resolve, reject) => {
         if(!data.name.match(regex)){
@@ -148,13 +161,14 @@ export const resolvers = {
               data.options && Object.keys(data.options).length > 0
                 ? data.options
                 : { storageBucket: data.name };
-            const app = enhanceForBigBoat(data.name, options, doc);
+            const app = enhanceForHyperDev(data.name, options, doc, user);
+            console.log('enhanced', app)
             Instances.update(
               {name: data.name},
               {
                 name: data.name,
                 storageBucket: options.storageBucket,
-                startedBy: "TBD",
+                startedBy: user,
                 state: "created",
                 desiredState: "running",
                 status: "Request sent to agent",
