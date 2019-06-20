@@ -14,4 +14,5 @@ WORKDIR /dist
 COPY --from=build /src/dist .
 COPY --from=build /src/node_modules ./node_modules
 
-CMD ["node", "index.js"]
+EXPOSE 3010 9229
+ENTRYPOINT npm run start

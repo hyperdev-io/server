@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 0",
-    "start": "nodemon ./src/index.js --exec babel-node",
+    "start": "nodemon --inspect=0.0.0.0:9229 ./src/index.js --exec babel-node",
     "dev": "MQTT_URL=mqtt://localhost nodemon ./src/index.js --exec babel-node",
     "build": "babel src -d dist",
     "serve": "node dist/index.js"
@@ -38,8 +38,8 @@
     "@babel/cli": "^7.0.0",
     "@babel/core": "^7.0.0",
     "@babel/node": "^7.0.0",
-    "@babel/preset-env": "^7.0.0",
     "@babel/plugin-proposal-class-properties": "^7.0.0",
-    "nodemon": "^1.12.1"
+    "@babel/preset-env": "^7.0.0",
+    "nodemon": "^1.19.1"
   }
 }
