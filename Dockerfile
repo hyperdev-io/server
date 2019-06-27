@@ -13,5 +13,5 @@ FROM node:10-alpine
 WORKDIR /dist
 COPY --from=build /src/dist .
 COPY --from=build /src/node_modules ./node_modules
-EXPOSE 3010 9229
-ENTRYPOINT npm run start
+
+CMD ["node", "index.js"]
