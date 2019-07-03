@@ -141,6 +141,7 @@ type Subscription {
 
 input Options {
   storageBucket: String
+  stateful: Boolean
 }
 
 type Mutation {
