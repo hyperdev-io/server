@@ -145,7 +145,6 @@ export const resolvers = {
       });
     },
     startInstance: async (root, data, { db: { Instances, Apps }, request: { user } }) => {
-      console.log("startInstance", data, user);
       const regex = /^(?:[A-Za-z0-9][A-Za-z0-9\-]{0,30}[A-Za-z0-9]|[A-Za-z0-9])$/
       return new Promise((resolve, reject) => {
         if(!data.name.match(regex)){
@@ -168,6 +167,7 @@ export const resolvers = {
               {
                 name: data.name,
                 storageBucket: options.storageBucket,
+                stateful: options.stateful,
                 startedBy: user,
                 state: "created",
                 desiredState: "running",

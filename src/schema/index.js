@@ -56,6 +56,7 @@ type Instance {
   storageBucket: String
   startedBy: User!
   state: String
+  stateful: Boolean
   desiredState: String
   status: String
   services(name: String): [ServiceInfo]!
