@@ -72,20 +72,6 @@ export const resolvers = {
             Object.keys(args).length != 0 ? args.name === serviceName : true
         )
         .map(key => Object.assign({ name: key }, instance.services[key]));
-    },
-    startedBy: (instance) => {
-      const service = instance.services[Object.keys(instance.services)[0]];
-
-      if (service) {
-        const labels = service.labels;
-        return {
-          name: labels.find(l => l.label === 'io.hyperdev.startedby.name').value,
-          username: labels.find(l => l.label === 'io.hyperdev.startedby.username').value,
-          email: labels.find(l => l.label === 'io.hyperdev.startedby.email').value,
-          picture: `https://www.gravatar.com/avatar/${md5(labels.find(l => l.label === 'io.hyperdev.startedby.email').value)}?d=robohash`,
-        }
-      }
-      return {name: '', username: '', email: '', picture: ''}
     }
   },
   Bucket: {
@@ -138,7 +124,7 @@ export const resolvers = {
     },
     removeApp: async (root, data, { db: { Apps } }) => {
       return new Promise((resolve, reject) => {
-        Apps.remove(_.pick(data, "name", "version"), {}, (err, numRemoved) => {
+        Apps.remove(_.pick(data, "name", "versi33on"), {}, (err, numRemoved) => {
           resolve(numRemoved);
           pFindAll(Apps).then(docs => publishApps(docs));
         });
@@ -146,6 +132,7 @@ export const resolvers = {
     },
     startInstance: async (root, data, { db: { Instances, Apps }, request: { user } }) => {
       console.log("startInstance", data, user);
+      console.log(user)
       const regex = /^(?:[A-Za-z0-9][A-Za-z0-9\-]{0,30}[A-Za-z0-9]|[A-Za-z0-9])$/
       return new Promise((resolve, reject) => {
         if(!data.name.match(regex)){
@@ -168,7 +155,7 @@ export const resolvers = {
               {
                 name: data.name,
                 storageBucket: options.storageBucket,
-                startedBy: user,
+                startedBy: { picture: '', ...user},
                 state: "created",
                 desiredState: "running",
                 status: "Request sent to agent",
