@@ -8,7 +8,7 @@ const TOPIC_INSTANCES = "/bigboat/instances";
 const TOPIC_BUCKETS = "/agent/storage/buckets";
 const TOPIC_PSMQTT = "psmqtt/#";
 const TOPIC_BUCKET_SIZE = "/agent/storage/bucket/size";
-const TOPIC_PSMQTT = "psmqtt/#";
+const TOPIC_STORAGE = "/agent/storage/size";
 
 const SUBSCRIBE_TO_TOPICS = [TOPIC_INSTANCES, TOPIC_BUCKETS, TOPIC_PSMQTT, TOPIC_BUCKET_SIZE, TOPIC_STORAGE];
 
