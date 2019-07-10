@@ -14,7 +14,7 @@ export default (Instances) => (instances) => {
       service.labels = _.mapKeys(service.labels, (value, key) => key.replace(/\./g, '_'));
     }
     const service = instance.services[Object.keys(instance.services)[0]];
-    service.startedBy = {
+    instance.startedBy = {
       name: service.labels['io_hyperdev_startedby_name'],
       username: service.labels['io_hyperdev_startedby_username'],
       email: service.labels['io_hyperdev_startedby_email'],
