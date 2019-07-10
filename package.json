@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 0",
-    "start": "nodemon --inspect=0.0.0.0:9229 ./src/index.js --exec babel-node",
+    "start": "nodemon ./src/index.js --inspect=0.0.0.0:9229 --exec babel-node",
     "dev": "MQTT_URL=mqtt://localhost nodemon ./src/index.js --exec babel-node",
     "build": "babel src -d dist",
     "serve": "node dist/index.js"
