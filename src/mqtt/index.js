@@ -1,13 +1,16 @@
 import _ from "lodash";
 import swarmHandler from "./docker/swarm";
-import bucketHandler from "./buckets";
+import storageHandler from "./storage";
+import {bucketHandler, bucketSizeHandler} from "./buckets";
 import psmqttHandler from "./psmqtt"
 
 const TOPIC_INSTANCES = "/bigboat/instances";
 const TOPIC_BUCKETS = "/agent/storage/buckets";
 const TOPIC_PSMQTT = "psmqtt/#";
+const TOPIC_BUCKET_SIZE = "/agent/storage/bucket/size";
+const TOPIC_STORAGE = "/agent/storage/size";
 
-const SUBSCRIBE_TO_TOPICS = [TOPIC_INSTANCES, TOPIC_BUCKETS, TOPIC_PSMQTT];
+const SUBSCRIBE_TO_TOPICS = [TOPIC_INSTANCES, TOPIC_BUCKETS, TOPIC_PSMQTT, TOPIC_BUCKET_SIZE, TOPIC_STORAGE];
 
 var _mqtt;
 const publishJson = (topic, json) =>
@@ -23,6 +26,12 @@ const selectHandler = db => topic => {
     }
     case TOPIC_BUCKETS: {
       return bucketHandler(db.Buckets);
+    }
+    case TOPIC_STORAGE: {
+      return storageHandler(db.DataStores);
+    }
+    case TOPIC_BUCKET_SIZE: {
+      return bucketSizeHandler(db.Buckets);
     }
     default: {
       if (_.startsWith(topic, "psmqtt/")) return psmqttHandler(db.Resources)(topic);

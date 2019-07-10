@@ -104,4 +104,4 @@ const start = async () => {
   mqttHandler(db, mqttClient)
 };
 
-start().catch( x => console.log('ERROR', x))
+start().catch( x => console.log('ERROR', x));

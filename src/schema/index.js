@@ -65,6 +65,7 @@ type Bucket {
   id: ID!
   name: String!
   isLocked: Boolean!
+  size: Float
 }
 
 type DataStore {

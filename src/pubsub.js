@@ -2,6 +2,7 @@ import { PubSub } from 'graphql-subscriptions';
 
 const INSTANCES_TOPIC        = 'instances_topic';
 const BUCKETS_TOPIC          = 'buckets_topic';
+const STORAGE_TOPIC          = 'storage_topic';
 const APPS_TOPIC             = 'apps_topic';
 const RESOURCES_TOPIC        = 'resources_topic';
 
@@ -10,6 +11,7 @@ const publish = topic => data => pubsub.publish(topic, data);
 
 export const publishInstances = publish(INSTANCES_TOPIC);
 export const publishBuckets = publish(BUCKETS_TOPIC);
+export const publishStorage = publish(STORAGE_TOPIC);
 export const publishApps = publish(APPS_TOPIC);
 export const publishResources = publish(RESOURCES_TOPIC);
 
