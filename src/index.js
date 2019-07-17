@@ -1,5 +1,6 @@
 import cors from 'cors'
 import mqttHandler from './mqtt'
+import { startListenLogsInstance, stopListenLogsInstance } from "./mqtt";
 import connectNedb from './nedb-connector';
 const mqtt = require('mqtt')
 const express = require('express');
@@ -82,6 +83,37 @@ const start = async () => {
     subscriptionsEndpoint: `ws://localhost:8081/api/subscriptions`,
   }));
   app.use('/subscriptions', authTokenMiddleware)
+
+  app.use('/event-stream', (req, res) => {
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+    });
+    res.write('\n');
+
+    let messageId = 0;
+    mqttClient.subscribe("/send_log")
+
+    mqttClient.on("message", (topic, data) => {
+      if (topic==='/send_log'){
+        var message = data.toString('utf8')
+        message = message.substring(1, message.length - 1);
+        res.write(`id: ${messageId}\n`);
+        res.write(`data: ${message}\n\n`);
+        messageId += 1;
+      }
+    });
+
+    startListenLogsInstance({serviceName: req.query.serviceName});
+
+    req.on('close', () => {
+      mqttClient.unsubscribe("/send_log")
+      stopListenLogsInstance({serviceName: req.query.serviceName});
+    });
+
+  });
+
   const server = createServer(app);
   server.listen(PORT, () => {
     console.log(`HyperDev GraphQL server running on port ${PORT}.`)

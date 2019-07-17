@@ -56,6 +56,14 @@ export const stopInstance = data =>
 export const startInstance = data =>
   publishJson("/commands/instance/start", data);
 
+export const startListenLogsInstance = data =>{
+  publishJson("/commands/logs/start", data);
+}
+
+export const stopListenLogsInstance = data =>{
+  publishJson("/commands/logs/stop", data);
+}
+
 export const deleteBucket = name =>
   publishJson("/commands/storage/bucket/delete", { name });
 
