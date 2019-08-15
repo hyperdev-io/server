@@ -92,11 +92,12 @@ const start = async () => {
     });
     res.write('\n');
 
+    let sessionId = uuidv1();
     let messageId = 0;
-    mqttClient.subscribe("/send_log")
+    mqttClient.subscribe("/send_log/"+req.query.serviceName+'/'+sessionId)
 
     mqttClient.on("message", (topic, data) => {
-      if (topic==='/send_log'){
+      if (topic==="/send_log/"+req.query.serviceName+'/'+sessionId){
         var message = data.toString('utf8')
         message = message.substring(1, message.length - 1);
         res.write(`id: ${messageId}\n`);
@@ -105,11 +106,11 @@ const start = async () => {
       }
     });
 
-    startListenLogsInstance({serviceName: req.query.serviceName});
+    startListenLogsInstance({serviceName: req.query.serviceName, sessionId: sessionId});
 
     req.on('close', () => {
-      mqttClient.unsubscribe("/send_log")
-      stopListenLogsInstance({serviceName: req.query.serviceName});
+      mqttClient.unsubscribe("/send_log/"+req.query.serviceName+'/'+sessionId)
+      stopListenLogsInstance({serviceName: req.query.serviceName, sessionId: sessionId});
     });
 
   });
