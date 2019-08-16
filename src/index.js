@@ -90,11 +90,16 @@ const start = async () => {
       'Cache-Control': 'no-cache',
       'Connection': 'keep-alive',
     });
-    res.write('\n');
 
     let sessionId = uuidv1();
     let messageId = 0;
     mqttClient.subscribe("/send_log/"+req.query.serviceName+'/'+sessionId)
+
+    // prevent frontend part from closing connection
+    let heartbeat = setInterval(() => {
+      res.write(`event: ping\n`)
+      res.write(`data: asdasd\n\n`);
+    }, 10000);
 
     mqttClient.on("message", (topic, data) => {
       if (topic==="/send_log/"+req.query.serviceName+'/'+sessionId){
@@ -109,6 +114,7 @@ const start = async () => {
     startListenLogsInstance({serviceName: req.query.serviceName, sessionId: sessionId});
 
     req.on('close', () => {
+      clearInterval(heartbeat);
       mqttClient.unsubscribe("/send_log/"+req.query.serviceName+'/'+sessionId)
       stopListenLogsInstance({serviceName: req.query.serviceName, sessionId: sessionId});
     });
