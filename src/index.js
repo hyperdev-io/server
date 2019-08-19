@@ -90,20 +90,20 @@ const start = async () => {
       'Cache-Control': 'no-cache',
       'Connection': 'keep-alive',
     });
-
     let sessionId = uuidv1();
     let messageId = 0;
-    mqttClient.subscribe("/send_log/"+req.query.serviceName+'/'+sessionId)
+    let serviceFullName = req.query.serviceName + '/' + sessionId;
+    mqttClient.subscribe("/send_log/" + serviceFullName);
 
     // prevent frontend part from closing connection
     let heartbeat = setInterval(() => {
-      res.write(`event: ping\n`)
-      res.write(`data: asdasd\n\n`);
+      res.write(`event: ping\n`);
+      res.write(`data: ping\n\n`);
     }, 10000);
 
     mqttClient.on("message", (topic, data) => {
-      if (topic==="/send_log/"+req.query.serviceName+'/'+sessionId){
-        var message = data.toString('utf8')
+      if (topic==="/send_log/" + serviceFullName){
+        var message = data.toString('utf8');
         message = message.substring(1, message.length - 1);
         res.write(`id: ${messageId}\n`);
         res.write(`data: ${message}\n\n`);
@@ -111,12 +111,12 @@ const start = async () => {
       }
     });
 
-    startListenLogsInstance({serviceName: req.query.serviceName, sessionId: sessionId});
+    startListenLogsInstance({serviceName: req.query.serviceName, serviceFullName: serviceFullName});
 
     req.on('close', () => {
       clearInterval(heartbeat);
-      mqttClient.unsubscribe("/send_log/"+req.query.serviceName+'/'+sessionId)
-      stopListenLogsInstance({serviceName: req.query.serviceName, sessionId: sessionId});
+      mqttClient.unsubscribe("/send_log/"+serviceFullName)
+      stopListenLogsInstance({serviceFullName: serviceFullName});
     });
 
   });

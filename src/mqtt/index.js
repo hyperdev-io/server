@@ -9,6 +9,7 @@ const TOPIC_BUCKETS = "/agent/storage/buckets";
 const TOPIC_PSMQTT = "psmqtt/#";
 const TOPIC_BUCKET_SIZE = "/agent/storage/bucket/size";
 const TOPIC_STORAGE = "/agent/storage/size";
+const TOPIC_LOGS = "/send_log";
 
 const SUBSCRIBE_TO_TOPICS = [TOPIC_INSTANCES, TOPIC_BUCKETS, TOPIC_PSMQTT, TOPIC_BUCKET_SIZE, TOPIC_STORAGE];
 
@@ -35,6 +36,10 @@ const selectHandler = db => topic => {
     }
     default: {
       if (_.startsWith(topic, "psmqtt/")) return psmqttHandler(db.Resources)(topic);
+      //do nothing. logs handler placed in src/index.js
+      if (_.startsWith(topic, TOPIC_LOGS)) {
+        return topic => data => {};
+      }
       else return unknownTopicHandler(topic);
     }
   }
