@@ -1,6 +1,6 @@
 import cors from 'cors'
 import mqttHandler from './mqtt'
-import { startListenLogsInstance, stopListenLogsInstance } from "./mqtt";
+import { startDownloadLogs, startListenLogsInstance, stopListenLogsInstance } from "./mqtt";
 import connectNedb from './nedb-connector';
 const mqtt = require('mqtt')
 const express = require('express');
@@ -12,6 +12,7 @@ import { execute, subscribe } from 'graphql';
 const schema = require('./schema');
 const ldap = require('ldapjs');
 const uuidv1 = require('uuid/v1');
+var stream = require('stream');
 
 const PORT = 3010;
 const CFG = {
@@ -82,6 +83,29 @@ const start = async () => {
     endpointURL: '/api/graphql',
     subscriptionsEndpoint: `ws://localhost:8081/api/subscriptions`,
   }));
+
+  app.use('/log-download', (req, res) => {
+    res.set('Content-disposition', 'attachment; filename=' + req.query.serviceName +'.txt');
+    res.set('Content-Type', 'text/plain');
+    let sessionId = uuidv1();
+    let serviceFullName = req.query.serviceName + '/' + sessionId;
+
+    mqttClient.subscribe("/send_log_download/" + serviceFullName);
+
+    startDownloadLogs({serviceName: req.query.serviceName, serviceFullName: serviceFullName});
+
+    mqttClient.on("message", (topic, data) => {
+      if (topic==="/send_log_download/" + serviceFullName){
+        console.log('data',data)
+
+        var message = data.toString('utf8');
+        console.log('message',message)
+
+        res.status(200).send(message);
+      }
+    });
+  });
+
   app.use('/subscriptions', authTokenMiddleware)
 
   app.use('/event-stream', (req, res) => {
