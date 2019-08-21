@@ -103,7 +103,6 @@ const start = async () => {
         res.charset = 'UTF-8';
         message = message.replace(/\\n/g, "\r\n");
         message = message.substring(1, message.length - 1);
-        console.log('message', message)
         res.write(message)
         res.end();
       }
