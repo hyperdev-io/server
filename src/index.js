@@ -13,6 +13,7 @@ const schema = require('./schema');
 const ldap = require('ldapjs');
 const uuidv1 = require('uuid/v1');
 var stream = require('stream');
+const fs = require('fs');
 
 const PORT = 3010;
 const CFG = {
@@ -96,12 +97,15 @@ const start = async () => {
 
     mqttClient.on("message", (topic, data) => {
       if (topic==="/send_log_download/" + serviceFullName){
-        console.log('data',data)
-
         var message = data.toString('utf8');
-        console.log('message',message)
-
-        res.status(200).send(message);
+        res.setHeader('Content-disposition', 'attachment; filename='+req.query.serviceName+'.txt');
+        res.setHeader('Content-type', 'text/plain');
+        res.charset = 'UTF-8';
+        message = message.replace(/\\n/g, "\r\n");
+        message = message.substring(1, message.length - 1);
+        console.log('message', message)
+        res.write(message)
+        res.end();
       }
     });
   });
