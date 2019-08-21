@@ -1,5 +1,6 @@
 import cors from 'cors'
 import mqttHandler from './mqtt'
+import { startDownloadLogs, startListenLogsInstance, stopListenLogsInstance } from "./mqtt";
 import connectNedb from './nedb-connector';
 const mqtt = require('mqtt')
 const express = require('express');
@@ -11,6 +12,8 @@ import { execute, subscribe } from 'graphql';
 const schema = require('./schema');
 const ldap = require('ldapjs');
 const uuidv1 = require('uuid/v1');
+var stream = require('stream');
+const fs = require('fs');
 
 const PORT = 3010;
 const CFG = {
@@ -81,7 +84,70 @@ const start = async () => {
     endpointURL: '/api/graphql',
     subscriptionsEndpoint: `ws://localhost:8081/api/subscriptions`,
   }));
+
+  app.use('/log-download', (req, res) => {
+    res.set('Content-disposition', 'attachment; filename=' + req.query.serviceName +'.txt');
+    res.set('Content-Type', 'text/plain');
+    let sessionId = uuidv1();
+    let serviceFullName = req.query.serviceName + '/' + sessionId;
+
+    mqttClient.subscribe("/send_log_download/" + serviceFullName);
+
+    startDownloadLogs({serviceName: req.query.serviceName, serviceFullName: serviceFullName});
+
+    mqttClient.on("message", (topic, data) => {
+      if (topic==="/send_log_download/" + serviceFullName){
+        var message = data.toString('utf8');
+        res.setHeader('Content-disposition', 'attachment; filename='+req.query.serviceName+'.txt');
+        res.setHeader('Content-type', 'text/plain');
+        res.charset = 'UTF-8';
+        message = message.replace(/\\n/g, "\r\n");
+        message = message.substring(1, message.length - 1);
+        res.write(message)
+        res.end();
+      }
+    });
+  });
+
   app.use('/subscriptions', authTokenMiddleware)
+
+  app.use('/event-stream', (req, res) => {
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+    });
+    let sessionId = uuidv1();
+    let messageId = 0;
+    let serviceFullName = req.query.serviceName + '/' + sessionId;
+    mqttClient.subscribe("/send_log/" + serviceFullName);
+
+    // prevent frontend part from closing connection
+    let heartbeat = setInterval(() => {
+      res.write(`event: ping\n`);
+      res.write(`data: ping\n\n`);
+    }, 10000);
+
+    mqttClient.on("message", (topic, data) => {
+      if (topic==="/send_log/" + serviceFullName){
+        var message = data.toString('utf8');
+        message = message.substring(1, message.length - 1);
+        res.write(`id: ${messageId}\n`);
+        res.write(`data: ${message}\n\n`);
+        messageId += 1;
+      }
+    });
+
+    startListenLogsInstance({serviceName: req.query.serviceName, serviceFullName: serviceFullName});
+
+    req.on('close', () => {
+      clearInterval(heartbeat);
+      mqttClient.unsubscribe("/send_log/"+serviceFullName)
+      stopListenLogsInstance({serviceFullName: serviceFullName});
+    });
+
+  });
+
   const server = createServer(app);
   server.listen(PORT, () => {
     console.log(`HyperDev GraphQL server running on port ${PORT}.`)
