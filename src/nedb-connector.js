@@ -1,7 +1,7 @@
 import Datastore from 'nedb';
 
 const db = {
-  Instances: new Datastore(),
+  Instances: new Datastore(({filename: './data/Instances.db', autoload: true})),
   Apps: new Datastore(({filename: './data/apps.db', autoload: true})),
   Accounts: new Datastore(({filename: './data/accounts.db', autoload: true})),
   AccessTokens: new Datastore(({filename: './data/tokens.db', autoload: true})),
