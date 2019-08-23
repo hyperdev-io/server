@@ -11,6 +11,7 @@ import { execute, subscribe } from 'graphql';
 const schema = require('./schema');
 const ldap = require('ldapjs');
 const uuidv1 = require('uuid/v1');
+const fetch = require("node-fetch");
 
 const PORT = 3010;
 const CFG = {
@@ -109,16 +110,12 @@ const start = async () => {
   });
 
   app.use('/event-stream', (req, res) => {
-    console.log('/event-stream')
-    /*res.writeHead(200, {
+    res.writeHead(200, {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache',
       'Connection': 'keep-alive',
     });
-    let sessionId = uuidv1();
     let messageId = 0;
-    let serviceFullName = req.query.serviceName + '/' + sessionId;
-    mqttClient.subscribe("/send_log/" + serviceFullName);
 
     // prevent frontend part from closing connection
     let heartbeat = setInterval(() => {
@@ -126,22 +123,25 @@ const start = async () => {
       res.write(`data: ping\n\n`);
     }, 10000);
 
-    mqttClient.on("message", (topic, data) => {
-      if (topic==="/send_log/" + serviceFullName){
-        var message = data.toString('utf8');
-        message = message.substring(1, message.length - 1);
-        res.write(`id: ${messageId}\n`);
-        res.write(`data: ${message}\n\n`);
-        messageId += 1;
-      }
-    });
-
-    req.on('close', () => {
-      clearInterval(heartbeat);
-      mqttClient.unsubscribe("/send_log/"+serviceFullName)
-      stopListenLogsInstance({serviceFullName: serviceFullName});
-    });*/
-
+    fetch('http://swarm:2375/services/2bth8f7mf5197qqeylwmf69ar/logs?timestamps=true&stdout=true&stderr=true&follow=true&tail=1000')
+      .then(function(response) {
+        var stream = response.body;
+        var string = '';
+        stream.on('data',function(data){
+          string =  data.toString('utf8').slice(8);
+          console.log('stream data ' + data);
+          res.write(`id: ${messageId}\n`);
+          res.write(`data: ${string}\n\n`);
+          messageId += 1;
+        });
+        stream.on('end',function(){
+          console.log('final output ' + string);
+          req.on('close', () => {
+            clearInterval(heartbeat);
+          });
+          stream.end()
+        });
+      })
   });
   const server = createServer(app);
   server.listen(PORT, () => {
