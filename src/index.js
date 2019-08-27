@@ -11,6 +11,7 @@ import { execute, subscribe } from 'graphql';
 const schema = require('./schema');
 const ldap = require('ldapjs');
 const uuidv1 = require('uuid/v1');
+const fetch = require("node-fetch");
 
 const PORT = 3010;
 const CFG = {
@@ -82,6 +83,60 @@ const start = async () => {
     subscriptionsEndpoint: `ws://localhost:8081/api/subscriptions`,
   }));
   app.use('/subscriptions', authTokenMiddleware)
+
+  app.use('/log-download', (req, res) => {
+    let serviceName = req.query.serviceName;
+    res.set('Content-disposition', 'attachment; filename=' + serviceName +'.txt');
+    res.set('Content-Type', 'text/plain');
+    res.charset = 'UTF-8';
+    fetch(`http://swarm:2375/services/${serviceName}/logs?timestamps=true&stdout=true&stderr=true`)
+        .then(function(response) {
+          let stream = response.body;
+          var string = '';
+          stream.on('data',function(data){
+            string =  data.toString('utf8').slice(8);
+            res.write(string)
+          });
+          stream.on('end', () => {
+            res.end();
+          });
+        });
+  });
+
+  app.use('/event-stream', (req, res) => {
+    let serviceName = req.query.serviceName;
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+    });
+    let messageId = 0;
+
+    // prevent frontend part from closing connection
+    let heartbeat = setInterval(() => {
+      res.write(`event: ping\n`);
+      res.write(`data: ping\n\n`);
+    }, 10000);
+    var stream = null;
+    fetch(`http://swarm:2375/services/${serviceName}/logs?timestamps=true&stdout=true&stderr=true&follow=true&tail=1000`)
+      .then(function(response) {
+        stream = response.body;
+        var string = '';
+        stream.on('data',function(data){
+          string =  data.toString('utf8').slice(8);
+          res.write(`id: ${messageId}\n`);
+          res.write(`data: ${string}\n\n`);
+          messageId += 1;
+        });
+
+      })
+    req.on('close', () => {
+      clearInterval(heartbeat);
+      if (stream) {
+        stream.end()
+      }
+    });
+  });
   const server = createServer(app);
   server.listen(PORT, () => {
     console.log(`HyperDev GraphQL server running on port ${PORT}.`)
