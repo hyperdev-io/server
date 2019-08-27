@@ -82,7 +82,7 @@ export const resolvers = {
   },
   ServiceInfo: {
     logs: async si => {
-      const logs = await fetch(si.logs["follow1000"]);
+      const logs = await fetch(si.logs["1000"]);
       const lines = await logs.text();
       return lines.split("\n").map(l => l.slice(8));
     }

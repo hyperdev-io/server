@@ -110,6 +110,7 @@ const start = async () => {
   });
 
   app.use('/event-stream', (req, res) => {
+    let serviceName = req.query.serviceName;
     res.writeHead(200, {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache',
@@ -123,19 +124,17 @@ const start = async () => {
       res.write(`data: ping\n\n`);
     }, 10000);
 
-    fetch('http://swarm:2375/services/2bth8f7mf5197qqeylwmf69ar/logs?timestamps=true&stdout=true&stderr=true&follow=true&tail=1000')
+    fetch(`http://swarm:2375/services/${serviceName}/logs?timestamps=true&stdout=true&stderr=true&follow=true&tail=1000`)
       .then(function(response) {
         var stream = response.body;
         var string = '';
         stream.on('data',function(data){
           string =  data.toString('utf8').slice(8);
-          console.log('stream data ' + data);
           res.write(`id: ${messageId}\n`);
           res.write(`data: ${string}\n\n`);
           messageId += 1;
         });
         stream.on('end',function(){
-          console.log('final output ' + string);
           req.on('close', () => {
             clearInterval(heartbeat);
           });
