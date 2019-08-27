@@ -98,7 +98,6 @@ const start = async () => {
             res.write(string)
           });
           stream.on('end', () => {
-            console.log('11111111111111111111111')
             res.end();
           });
         });
