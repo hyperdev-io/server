@@ -123,10 +123,10 @@ const start = async () => {
       res.write(`event: ping\n`);
       res.write(`data: ping\n\n`);
     }, 10000);
-
+    var stream = null;
     fetch(`http://swarm:2375/services/${serviceName}/logs?timestamps=true&stdout=true&stderr=true&follow=true&tail=1000`)
       .then(function(response) {
-        var stream = response.body;
+        stream = response.body;
         var string = '';
         stream.on('data',function(data){
           string =  data.toString('utf8').slice(8);
@@ -134,13 +134,16 @@ const start = async () => {
           res.write(`data: ${string}\n\n`);
           messageId += 1;
         });
-        stream.on('end',function(){
-          req.on('close', () => {
-            clearInterval(heartbeat);
-          });
-          stream.end()
-        });
+
       })
+    req.on('close', () => {
+      req.on('close', () => {
+        clearInterval(heartbeat);
+      });
+      if (stream) {
+        stream.end()
+      }
+    });
   });
   const server = createServer(app);
   server.listen(PORT, () => {
