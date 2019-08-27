@@ -1,5 +1,5 @@
 import cors from 'cors'
-import mqttHandler, {startDownloadLogs, startListenLogsInstance, stopListenLogsInstance} from './mqtt'
+import mqttHandler from './mqtt'
 import connectNedb from './nedb-connector';
 const mqtt = require('mqtt')
 const express = require('express');
@@ -85,28 +85,23 @@ const start = async () => {
   app.use('/subscriptions', authTokenMiddleware)
 
   app.use('/log-download', (req, res) => {
-    console.log('/log-download')
-    /*res.set('Content-disposition', 'attachment; filename=' + req.query.serviceName +'.txt');
+    let serviceName = req.query.serviceName;
+    res.set('Content-disposition', 'attachment; filename=' + serviceName +'.txt');
     res.set('Content-Type', 'text/plain');
-    let sessionId = uuidv1();
-    let serviceFullName = req.query.serviceName + '/' + sessionId;
-
-    mqttClient.subscribe("/send_log_download/" + serviceFullName);
-
-    startDownloadLogs({serviceName: req.query.serviceName, serviceFullName: serviceFullName});
-
-    mqttClient.on("message", (topic, data) => {
-      if (topic==="/send_log_download/" + serviceFullName){
-        var message = data.toString('utf8');
-        res.setHeader('Content-disposition', 'attachment; filename='+req.query.serviceName+'.txt');
-        res.setHeader('Content-type', 'text/plain');
-        res.charset = 'UTF-8';
-        message = message.replace(/\\n/g, "\r\n");
-        message = message.substring(1, message.length - 1);
-        res.write(message)
-        res.end();
-      }
-    });*/
+    res.charset = 'UTF-8';
+    fetch(`http://swarm:2375/services/${serviceName}/logs?timestamps=true&stdout=true&stderr=true`)
+        .then(function(response) {
+          let stream = response.body;
+          var string = '';
+          stream.on('data',function(data){
+            string =  data.toString('utf8').slice(8);
+            res.write(string)
+          });
+          stream.on('end', () => {
+            console.log('11111111111111111111111')
+            res.end();
+          });
+        });
   });
 
   app.use('/event-stream', (req, res) => {
@@ -137,9 +132,7 @@ const start = async () => {
 
       })
     req.on('close', () => {
-      req.on('close', () => {
-        clearInterval(heartbeat);
-      });
+      clearInterval(heartbeat);
       if (stream) {
         stream.end()
       }
