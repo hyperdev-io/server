@@ -25,7 +25,7 @@
     "graphql-type-json": "^0.1.4",
     "js-yaml": "^3.10.0",
     "ldapjs": "^1.0.2",
-    "lodash": "^4.17.4",
+    "lodash": "^4.17.19",
     "moment": "^2.19.2",
     "mongodb": "^2.2.33",
     "mqtt": "^2.15.0",
